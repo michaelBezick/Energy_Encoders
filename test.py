@@ -5,35 +5,6 @@ import torch.nn.functional as F
 import torch.nn as nn
 import polytensor.polytensor as polytensor
 
-tensor = torch.randn(64, 64)
-print(tensor)
-num_vars = 64
-sample_fn = lambda: torch.randn(1)
-num_per_degree = [64, 64 * 64]
-
-terms = polytensor.generators.coeffPUBORandomSampler(
-        n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
-        )
-print(polytensor.generators.denseFromSparse(terms))
-exit()
-num_vars = 10
-
-# Create a random polynomial with 10 variables and 5 terms per degree
-num_per_degree = [num_vars, 5, 5, 5]
-
-# Function to sample coefficients
-sample_fn = lambda: torch.randn(1)
-
-
-# Create coefficients for a random polynomial with 10 variables and 5 terms per degree up to degree 4
-terms = polytensor.generators.coeffPUBORandomSampler(
-    n=num_vars, num_terms=num_per_degree,sample_fn=sample_fn
-    )
-print(terms)
-
-exit()
-
-
 class TensorizedLayer(nn.Module):
     def __init__(self, dim_hidden, dim_sigma):
         super().__init__()
@@ -46,17 +17,17 @@ class TensorizedLayer(nn.Module):
         x = x + self.b
         return x
 
-logits = torch.Tensor([1, 1, 1])
+logits = torch.randn(10, 2)
 
 probabilities = F.softmax(logits)
 print(probabilities)
 sampler = torch.multinomial
 sampled = sampler(probabilities, 1, replacement=True)
-sampled -= 1
 print(sampled)
-print(f"Num -1: {torch.sum(sampled.eq(-1)).item()}")
-print(f"Num 0: {torch.sum(sampled.eq(0)).item()}")
-print(f"Num 1: {torch.sum(sampled.eq(1)).item()}")
+print(sampled.size())
+#print(f"Num -1: {torch.sum(sampled.eq(-1)).item()}")
+#print(f"Num 0: {torch.sum(sampled.eq(0)).item()}")
+#print(f"Num 1: {torch.sum(sampled.eq(1)).item()}")
 
 exit()
 layer = TensorizedLayer(dim_hidden=4, dim_sigma=2)

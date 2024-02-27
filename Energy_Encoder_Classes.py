@@ -10,29 +10,25 @@ from torch.utils.data import Dataset
 from Energy_Encoder_Modules import AttnBlock, VGGPerceptualLoss, ResnetBlockVAE
 
 class BVAE(pl.LightningModule):
-    def __init__(self, energy_fn, energy_loss_fn, model_type = 'QUBO', reconstruction_weight=0, perceptual_weight=0, energy_weight=0, in_channels = 1, h_dim = 32, lr = 1e-3, batch_size = 100, num_MCMC_iterations = 3, temperature = 0.1, latent_vector_dim = 17):
+    def __init__(self, energy_fn, energy_loss_fn, model_type = 'QUBO', reconstruction_weight=0, perceptual_weight=0, energy_weight=0, in_channels = 1, h_dim = 32, lr = 1e-3, batch_size = 100, num_MCMC_iterations = 3, temperature = 0.1, latent_vector_dim = 64):
         super().__init__()
 
+        self.sampler = torch.multinomial
         if model_type == 'QUBO':
             self.model_type = 'QUBO'
-            self.sampler = torch.bernoulli
-            num_logits = 1
+            num_logits = 2
         elif model_type == 'PUBO':
             self.model_type = 'PUBO'
-            self.sampler = torch.bernoulli
-            num_logits = 1
+            num_logits = 2
         elif model_type == 'Ising':
             self.model_type = 'Ising'
-            self.sampler = torch.bernoulli
-            num_logits = 1
+            num_logits = 2
         elif model_type == 'Blume-Capel':
             self.model_type = 'Blume-Capel'
-            self.sampler = torch.multinomial
             num_logits = 3
         elif model_type == 'Potts':
             self.model_type = 'Potts'
-            self.sampler = torch.bernoulli
-            num_logits = 1
+            num_logits = 2
         else:
             raise ValueError("Model does not exist!")
 
@@ -42,7 +38,7 @@ class BVAE(pl.LightningModule):
         self.latent_vector_dim = latent_vector_dim
 
         self.lr = lr
-        self.vae = VAE(in_channels, h_dim, lr, batch_size, num_logits)
+        self.vae = VAE(in_channels, h_dim, lr, batch_size, num_logits, latent_vector_dim)
 
         self.num_MCMC_iterations = num_MCMC_iterations
 
@@ -95,21 +91,27 @@ class BVAE(pl.LightningModule):
 
         logits = self.vae.encode(x)
 
-        probabilities = self.sigmoid(logits)
+        probabilities = F.softmax(logits)
 
         #bernoulli sampling
-        binary_vector = torch.bernoulli(probabilities)
+        sampled_vector = self.sampler(probabilities, 1, True)
 
-        original_binary_vector = binary_vector.clone()
+        if (self.model_type == "Blume-Capel"):
+            sampled_vector -= 1
+        elif (self.model_type == "Ising"):
+            sampled_vector *= 2
+            sampled_vector -= 1
+
+        original_sampled_vector = sampled_vector.clone()
 
         #MCMC
-        transitioned_vectors = binary_vector
+        transitioned_vectors = sampled_vector
         for _ in range(self.num_MCMC_iterations):
             transitioned_vectors = self.MCMC_step(transitioned_vectors)
 
         #straight through gradient copying
         transitioned_vectors_with_gradient = (transitioned_vectors - probabilities).detach() + probabilities
-        original_binary_vector_with_gradient = (original_binary_vector - probabilities).detach() + probabilities
+        original_sampled_vector_with_gradient = (original_sampled_vector - probabilities).detach() + probabilities
 
         x_hat = self.vae.decode(transitioned_vectors_with_gradient)
 
@@ -129,7 +131,7 @@ class BVAE(pl.LightningModule):
         perceptual_loss_value = self.perceptual_loss(x_hat, x) * self.perceptual_weight
 
         #energy correlation
-        energy = self.energy_fn(original_binary_vector_with_gradient)
+        energy = self.energy_fn(original_sampled_vector_with_gradient)
         energy_loss = self.energy_loss_fn(FOM_labels, energy) * self.energy_weight
 
         total_loss = perceptual_loss_value + reconstruction_loss + energy_loss
