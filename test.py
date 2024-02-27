@@ -5,15 +5,17 @@ import torch.nn.functional as F
 import torch.nn as nn
 import polytensor.polytensor as polytensor
 
-#num_vars = 64
-#sample_fn = lambda: torch.randn(1)
-#num_per_degree = [num_vars, 64 * 64 / 2, 2, sample_fn]
-#
-#terms = polytensor.generators.coeffPUBORandomSampler(
-#        n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
-#        )
-#print(terms)
-#exit()
+tensor = torch.randn(64, 64)
+print(tensor)
+num_vars = 64
+sample_fn = lambda: torch.randn(1)
+num_per_degree = [64, 64 * 64]
+
+terms = polytensor.generators.coeffPUBORandomSampler(
+        n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
+        )
+print(polytensor.generators.denseFromSparse(terms))
+exit()
 num_vars = 10
 
 # Create a random polynomial with 10 variables and 5 terms per degree
@@ -27,6 +29,7 @@ sample_fn = lambda: torch.randn(1)
 terms = polytensor.generators.coeffPUBORandomSampler(
     n=num_vars, num_terms=num_per_degree,sample_fn=sample_fn
     )
+print(terms)
 
 exit()
 

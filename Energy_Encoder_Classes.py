@@ -9,7 +9,7 @@ from torch import optim
 from torch.utils.data import Dataset
 from Energy_Encoder_Modules import AttnBlock, VGGPerceptualLoss, ResnetBlockVAE
 
-class BVAE_New(pl.LightningModule):
+class BVAE(pl.LightningModule):
     def __init__(self, energy_fn, energy_loss_fn, model_type = 'QUBO', reconstruction_weight=0, perceptual_weight=0, energy_weight=0, in_channels = 1, h_dim = 32, lr = 1e-3, batch_size = 100, num_MCMC_iterations = 3, temperature = 0.1, latent_vector_dim = 17):
         super().__init__()
 
