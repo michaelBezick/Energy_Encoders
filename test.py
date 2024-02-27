@@ -3,6 +3,34 @@ from torch.autograd import functional
 from torch.functional import Tensor
 import torch.nn.functional as F
 import torch.nn as nn
+import polytensor.polytensor as polytensor
+
+#num_vars = 64
+#sample_fn = lambda: torch.randn(1)
+#num_per_degree = [num_vars, 64 * 64 / 2, 2, sample_fn]
+#
+#terms = polytensor.generators.coeffPUBORandomSampler(
+#        n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
+#        )
+#print(terms)
+#exit()
+num_vars = 10
+
+# Create a random polynomial with 10 variables and 5 terms per degree
+num_per_degree = [num_vars, 5, 5, 5]
+
+# Function to sample coefficients
+sample_fn = lambda: torch.randn(1)
+
+
+# Create coefficients for a random polynomial with 10 variables and 5 terms per degree up to degree 4
+terms = polytensor.generators.coeffPUBORandomSampler(
+    n=num_vars, num_terms=num_per_degree,sample_fn=sample_fn
+    )
+
+exit()
+
+
 class TensorizedLayer(nn.Module):
     def __init__(self, dim_hidden, dim_sigma):
         super().__init__()
