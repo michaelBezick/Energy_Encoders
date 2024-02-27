@@ -13,11 +13,11 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 import torchvision.transforms as transforms
 import tensorflow as tf
 import os
+import polytensor.polytensor as polytensor
 
 num_MCMC_iterations = 0
 temperature = 0.1
 resume_from_checkpoint = True
-min_energy_vector = -4.25
 
 ###############################################################
 

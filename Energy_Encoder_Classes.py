@@ -9,34 +9,40 @@ from torch import optim
 from torch.utils.data import Dataset
 from Energy_Encoder_Modules import AttnBlock, VGGPerceptualLoss, ResnetBlockVAE
 
-#class TransformerEncoder(nn.Module):
-#    def __init__(self, dim):
-#        super().__init__()
-#        self.FF = nn.Sequential(nn.Linear(dim, dim),
-#                                nn.ReLU(),
-#                                nn.Linear(dim, dim),
-#                                nn.ReLU(),
-#                                nn.Linear(dim, dim))
-#
-#    def forward(self):
-#
-#
-#class Transformer(nn.Module):
-#    def __init__(self):
-#        super().__init__()
-#
-#    def forward(self):
-    
 class BVAE_New(pl.LightningModule):
-    def __init__(self, energy_fn, energy_loss_fn, reconstruction_weight=0, perceptual_weight=0, energy_weight=0, in_channels = 1, h_dim = 32, lr = 1e-3, batch_size = 100, num_MCMC_iterations = 3, temperature = 0.1, latent_vector_dim = 17):
+    def __init__(self, energy_fn, energy_loss_fn, model_type = 'QUBO', reconstruction_weight=0, perceptual_weight=0, energy_weight=0, in_channels = 1, h_dim = 32, lr = 1e-3, batch_size = 100, num_MCMC_iterations = 3, temperature = 0.1, latent_vector_dim = 17):
         super().__init__()
+
+        if model_type == 'QUBO':
+            self.model_type = 'QUBO'
+            self.sampler = torch.bernoulli
+            num_logits = 1
+        elif model_type == 'PUBO':
+            self.model_type = 'PUBO'
+            self.sampler = torch.bernoulli
+            num_logits = 1
+        elif model_type == 'Ising':
+            self.model_type = 'Ising'
+            self.sampler = torch.bernoulli
+            num_logits = 1
+        elif model_type == 'Blume-Capel':
+            self.model_type = 'Blume-Capel'
+            self.sampler = torch.multinomial
+            num_logits = 3
+        elif model_type == 'Potts':
+            self.model_type = 'Potts'
+            self.sampler = torch.bernoulli
+            num_logits = 1
+        else:
+            raise ValueError("Model does not exist!")
+
         self.automatic_optimization = False
 
         self.batch_size = batch_size
         self.latent_vector_dim = latent_vector_dim
 
         self.lr = lr
-        self.vae = VAE(in_channels, h_dim, lr, batch_size)
+        self.vae = VAE(in_channels, h_dim, lr, batch_size, num_logits)
 
         self.num_MCMC_iterations = num_MCMC_iterations
 
@@ -269,165 +275,11 @@ class LabeledDataset(Dataset):
 
         return image[:, 0:32, 0:32], label
 
-class BVAE(pl.LightningModule):
-    '''
-    Houses both VAE and Discriminator.
-    VAE trained with both perceptual and adversarial loss.
-    '''
-    def __init__(self, a, b, c, d, e, in_channels = 1, h_dim = 32, lr = 1e-3, patch_dim = 32, image_dim = 64, batch_size = 100, num_MCMC_iterations = 3, temperature = 0.1, latent_vector_dim = 17, QUBO_matrix=None, min_energy_vector=-4.25):
-        super().__init__()
-        self.automatic_optimization = False
-
-        self.image_dim = image_dim #length or width of original square image
-        self.patch_dim = patch_dim #length or width of intended square patch
-        self.num_patches = (image_dim - patch_dim + 1) ** 2
-
-        self.batch_size = batch_size
-        self.latent_vector_dim = latent_vector_dim
-
-        self.lr = lr
-        self.vae = VAE(in_channels, h_dim, lr, batch_size)
-
-        self.num_MCMC_iterations = num_MCMC_iterations
-
-        self.a = a
-        self.b = b
-        self.c = c
-        self.d = d
-        self.e = e
-
-        self.temperature = temperature
-
-        self.energy_loss_fn = nn.MSELoss()
-
-        self.QUBO_matrix = QUBO_matrix
-
-        self.perceptual_loss = VGGPerceptualLoss()
-        self.perceptual_loss.eval()
-
-        self.sigmoid = nn.Sigmoid()
-
-    def MCMC_step(self, batch):
-        s = batch
-
-        random_indices = torch.randint(self.latent_vector_dim, size = (self.batch_size, 1), device=self.device)
-
-        s_prime = s.scatter(1, random_indices, 1 - s.gather(1, random_indices))
-
-        s_energy = self.quboEnergy(s, self.QUBO_matrix)
-        s_prime_energy = self.quboEnergy(s_prime, self.QUBO_matrix)
-        e_matrix = m.e * torch.ones((self.batch_size), device=self.device)
-        acceptance_prob_RHS = torch.pow(e_matrix, (s_energy - s_prime_energy) / (self.temperature))        
-        acceptance_prob_LHS = torch.ones((self.batch_size), device=self.device)
-        acceptance_probability = torch.min(acceptance_prob_LHS, acceptance_prob_RHS)
-
-        s_conjoined = torch.cat((s.unsqueeze(1), s_prime.unsqueeze(1)), dim = 1)
-
-        sample_acceptance = torch.bernoulli(acceptance_probability)
-
-        sample_acceptance = sample_acceptance.unsqueeze(1)
-
-        transitioned_vectors = torch.where(sample_acceptance == 0, s_conjoined[:, 0, :], s_conjoined[:, 1, :])
-
-        return transitioned_vectors
-
-    def training_step(self, batch, batch_idx):
-        x, FOM_labels = batch
-
-        opt_VAE= self.optimizers()
-        scheduler = self.lr_schedulers()
-
-        #training VAE
-        self.toggle_optimizer(opt_VAE)
-
-        logits = self.vae.encode(x)
-
-        probabilities = self.sigmoid(logits)
-
-        #bernoulli sampling
-        binary_vector = torch.bernoulli(probabilities)
-
-        original_binary_vector = binary_vector.clone()
-
-        #MCMC
-        transitioned_vectors = binary_vector
-        for i in range(self.num_MCMC_iterations):
-            transitioned_vectors = self.MCMC_step(transitioned_vectors)
-
-        #straight through gradient copying
-        transitioned_vectors_with_gradient = (transitioned_vectors - probabilities).detach() + probabilities
-        original_binary_vector_with_gradient = (original_binary_vector - probabilities).detach() + probabilities
-
-        x_hat = self.vae.decode(transitioned_vectors_with_gradient)
-
-        #logging generated images
-        sample_imgs_generated = x_hat[:30]
-        sample_imgs_original = x[:30]
-        gridGenerated = torchvision.utils.make_grid(sample_imgs_generated)
-        gridOriginal = torchvision.utils.make_grid(sample_imgs_original)
-
-        if self.global_step % 10 == 0:
-            self.logger.experiment.add_image("Generated_images", gridGenerated, self.global_step)
-            self.logger.experiment.add_image("Original_images", gridOriginal, self.global_step)
-
-        
-        reconstruction_loss = F.mse_loss(x_hat, x) * self.a
-
-        perceptual_loss_value = self.perceptual_loss(x_hat, x) * self.b
-
-
-        #energy correlation
-        energy = self.quboEnergy(original_binary_vector_with_gradient, self.QUBO_matrix)
-        normalized_FOM = torch.divide((FOM_labels - self.FOM_min), (self.FOM_max - self.FOM_min)) #range [0, 1]
-        normalized_FOM = normalized_FOM * self.magnitude_min_energy_vector #to correlate min_energy_vector to best FOM
-        energy_loss = self.energy_loss_fn(-normalized_FOM, energy) * self.e
-
-
-        total_loss = perceptual_loss_value + reconstruction_loss + energy_loss
-        self.log("reconstruction_loss", reconstruction_loss)
-        self.log("perceptual_loss", perceptual_loss_value)
-        self.log("energy_loss", energy_loss)
-        self.log("train_loss", total_loss)
-
-        self.manual_backward(total_loss)
-        opt_VAE.step()
-        scheduler.step()
-        opt_VAE.zero_grad()
-        self.untoggle_optimizer(opt_VAE)
-        
-
-    def configure_optimizers(self):
-        opt_VAE = torch.optim.Adam(self.vae.parameters(), lr = self.lr) #weight_decay=0.01
-        scheduler = optim.lr_scheduler.LambdaLR(optimizer = opt_VAE, lr_lambda = lambda epoch: self.warmup_lr_schedule(epoch))
-
-        return ({"optimizer": opt_VAE, "lr_scheduler": scheduler}
-                 )
-    
-    def warmup_lr_schedule(self, epoch):
-        warmup_epochs = 400
-        if epoch < warmup_epochs:
-            return (epoch + 1) / warmup_epochs
-        return 1
-
-    def on_train_start(self):
-        self.QUBO_matrix = self.QUBO_matrix.to(self.device)
-    def quboEnergy(self, x, H):
-        if len(x.shape) == 1 and len(H.shape) == 2:
-            return torch.einsum("i,ij,j->", x, H, x)
-        elif len(x.shape) == 2 and len(H.shape) == 3:
-            return torch.einsum("bi,bij,bj->b", x, H, x)
-        elif len(x.shape) == 2 and len(H.shape) == 2:
-            return torch.einsum("bi,ij,bj->b", x, H, x)
-        else:
-            raise ValueError(
-                "Invalid shapes for x and H. x must be of shape (batch_size, num_dim) and H must be of shape (batch_size, num_dim, num_dim)."
-            )
-
 class VAE(pl.LightningModule):
     '''
     Variational autoencoder with UNet structure.
     '''
-    def __init__(self, in_channels = 1, h_dim = 32, lr = 1e-3, batch_size = 100):
+    def __init__(self, in_channels = 1, h_dim = 32, lr = 1e-3, batch_size = 100, num_logits = 1, problem_size = 64):
         super().__init__()
 
         self.batch_size = batch_size
@@ -442,7 +294,6 @@ class VAE(pl.LightningModule):
         self.resnet4E = ResnetBlockVAE(h_dim, h_dim, (3,3), h_dim)
         self.resnet5E = ResnetBlockVAE(h_dim, h_dim, (3,3), h_dim)
         self.resnet6E = ResnetBlockVAE(h_dim, h_dim, (3,3), h_dim)
-        #self.resnet7E = ResnetBlockVAE(h_dim, h_dim, (3,3), h_dim)
         self.maxPool = nn.MaxPool2d((2, 2), 2)
 
         self.encoder = nn.Sequential(nn.Conv2d(in_channels, h_dim, kernel_size = (3, 3), padding = 'same'),
@@ -460,22 +311,12 @@ class VAE(pl.LightningModule):
                                     nn.Conv2d(h_dim, 1, kernel_size=1),
                                     nn.Flatten(),
                                     nn.ReLU(),
-                                    nn.Linear(64, 64),
+                                    nn.Linear(64, problem_size * num_logits),
                                     )
         
-        '''
-        #self.to_mu = nn.Conv2d(h_dim, 1, (1, 1))
-        self.to_logits = nn.Sequential(nn.Linear(64, 256),
-                                       nn.GroupNorm(8, 256),
-                                       nn.ReLU(),
-                                       nn.Linear(256, 25),
-                                       )
-        '''
-        #self.to_sigma = nn.Conv2d(h_dim, 1, (1, 1))
 
         self.attention1D = AttnBlock(h_dim)
         self.attention2D = AttnBlock(h_dim)
-        #self.resnet0D = ResnetBlockVAE(h_dim, h_dim, (3,3), h_dim)
         self.resnet1D = ResnetBlockVAE(h_dim, h_dim, (3,3), h_dim)
         self.resnet2D = ResnetBlockVAE(h_dim, h_dim, (3,3), h_dim)
         self.resnet3D = ResnetBlockVAE(h_dim, h_dim, (3,3), h_dim)
@@ -483,17 +324,7 @@ class VAE(pl.LightningModule):
         self.resnet5D = ResnetBlockVAE(h_dim, h_dim, (3,3), h_dim)
         self.resnet6D = ResnetBlockVAE(h_dim, h_dim, (3,3), h_dim)
         
-        '''
-        self.to_decoder = nn.Sequential(nn.Linear(25, 256),
-                                        nn.GroupNorm(8, 256),
-                                        nn.ReLU(),
-                                        nn.Linear(256, 64),
-                                        nn.GroupNorm(8, 64),
-                                        nn.ReLU(),
-                                        )
-        '''
-                                        
-        self.decoder = nn.Sequential(nn.Linear(64, 64),
+        self.decoder = nn.Sequential(nn.Linear(problem_size, 64),
                                      nn.ReLU(),
                                      nn.Unflatten(1, (1, 8, 8)),
                                      nn.Conv2d(1, h_dim, (1, 1)),
@@ -515,53 +346,3 @@ class VAE(pl.LightningModule):
     
     def decode(self, z):
         return self.decoder(z)
-
-class Discriminator(nn.Module):
-    def __init__(self, in_channels = 1, h_dim = 64):
-        super().__init__()
-        self.in_channels = in_channels
-        self.h_dim = h_dim
-        
-        self.layers = nn.Sequential(
-            nn.Linear(256, 256),
-            nn.ReLU(),
-            nn.Linear(256, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 1),
-            nn.Sigmoid(),
-        )
-        
-
-        self.layers = nn.Sequential(
-            nn.Conv2d(1, h_dim, kernel_size=4, stride=2, padding=1), #16x16
-            nn.GroupNorm(8, h_dim),
-            nn.SiLU(),
-            nn.Conv2d(h_dim, h_dim * 2, kernel_size=4, stride=2, padding=1), #8x8
-            nn.GroupNorm(8, h_dim * 2),
-            nn.SiLU(),
-            nn.Conv2d(h_dim * 2, h_dim * 4, kernel_size=4, stride=2, padding=1), #4x4
-            nn.GroupNorm(8, h_dim * 4),
-            nn.SiLU(),
-            nn.Conv2d(h_dim * 4, h_dim * 8, kernel_size=4, stride=2, padding=1), #2x2
-            nn.GroupNorm(8, h_dim * 8),
-            nn.SiLU(),
-            nn.Conv2d(h_dim * 8, h_dim * 8, kernel_size=4, stride=2, padding=1), #1x1
-            nn.GroupNorm(8, h_dim * 8),
-            nn.SiLU(),
-        )
-
-        self.fc = nn.Sequential(
-            nn.Linear(h_dim * 8, 1),
-            nn.Sigmoid(),
-        )
-
-    def forward(self, x):
-        x = self.layers(x)
-        x = x.view(-1, self.h_dim * 8)
-        x = self.fc(x)
-        return x
-

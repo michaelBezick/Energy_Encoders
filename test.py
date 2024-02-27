@@ -15,16 +15,19 @@ class TensorizedLayer(nn.Module):
         x = x + self.b
         return x
 
-#logits = torch.Tensor([1, 1, 1])
-#probabilities = F.softmax(logits)
-#print(probabilities)
-#sampled = torch.multinomial(probabilities, 100, replacement=True)
-#sampled -= 1
-#print(sampled)
-#print(f"Num -1: {torch.sum(sampled.eq(-1)).item()}")
-#print(f"Num 0: {torch.sum(sampled.eq(0)).item()}")
-#print(f"Num 1: {torch.sum(sampled.eq(1)).item()}")
+logits = torch.Tensor([1, 1, 1])
 
+probabilities = F.softmax(logits)
+print(probabilities)
+sampler = torch.multinomial
+sampled = sampler(probabilities, 1, replacement=True)
+sampled -= 1
+print(sampled)
+print(f"Num -1: {torch.sum(sampled.eq(-1)).item()}")
+print(f"Num 0: {torch.sum(sampled.eq(0)).item()}")
+print(f"Num 1: {torch.sum(sampled.eq(1)).item()}")
+
+exit()
 layer = TensorizedLayer(dim_hidden=4, dim_sigma=2)
 sigma = torch.Tensor([[1],
                       [0]])
