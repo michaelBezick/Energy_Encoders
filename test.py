@@ -3,7 +3,53 @@ from torch.autograd import functional
 from torch.functional import Tensor
 import torch.nn.functional as F
 import torch.nn as nn
-import polytensor.polytensor as polytensor
+from Energy_Encoder_Modules import Potts_Energy_Fn
+#blume capel test
+
+interactions = torch.randn(64, 64)
+interactions = torch.triu(interactions)
+vector = 0.5 * torch.ones(64)
+vector = torch.bernoulli(vector)
+energy = Potts_Energy_Fn(vector, interactions)
+print(energy)
+exit()
+
+def quboEnergy(x, H):
+    """
+    Computes the energy for the specified Quadratic Unconstrained Binary Optimization (QUBO) system.
+
+    Parameters:
+        x (torch.Tensor) : Tensor of shape (batch_size, num_dim) representing the configuration of the system.
+        H (torch.Tensor) : Tensor of shape (batch_size, num_dim, num_dim) representing the QUBO matrix.
+
+    Returns:
+        torch.Tensor : The energy for each configuration in the batch.
+    """
+    if len(x.shape) == 1 and len(H.shape) == 2:
+        return torch.einsum("i,ij,j->", x, H, x)
+    elif len(x.shape) == 2 and len(H.shape) == 3:
+        return torch.einsum("bi,bij,bj->b", x, H, x)
+    elif len(x.shape) == 2 and len(H.shape) == 2:
+        return torch.einsum("bi,ij,bj->b", x, H, x)
+    else:
+        raise ValueError(
+            "Invalid shapes for x and H. x must be of shape (batch_size, num_dim) and H must be of shape (batch_size, num_dim, num_dim)."
+        )
+
+interactions = torch.randn(64, 64)
+interactions = torch.triu(interactions)
+
+vector_logits = torch.randn(64, 3)
+vector_probabilities = F.softmax(vector_logits)
+print(vector_probabilities)
+exit()
+sampled = torch.multinomial(vector_probabilities, 1, True)
+scaled = sampled - 1.
+print(scaled.size())
+print(interactions.size())
+energy = torch.einsum("kj,ji,ik->k", scaled.t(), interactions, scaled)
+exit()
+
 
 class TensorizedLayer(nn.Module):
     def __init__(self, dim_hidden, dim_sigma):

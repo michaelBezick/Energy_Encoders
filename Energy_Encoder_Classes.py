@@ -10,10 +10,11 @@ from torch.utils.data import Dataset
 from Energy_Encoder_Modules import AttnBlock, VGGPerceptualLoss, ResnetBlockVAE
 
 class BVAE(pl.LightningModule):
-    def __init__(self, energy_fn, energy_loss_fn, model_type = 'QUBO', reconstruction_weight=0, perceptual_weight=0, energy_weight=0, in_channels = 1, h_dim = 32, lr = 1e-3, batch_size = 100, num_MCMC_iterations = 3, temperature = 0.1, latent_vector_dim = 64):
+    def __init__(self, energy_fn, energy_loss_fn, scaler, model_type = 'QUBO', reconstruction_weight=0, perceptual_weight=0, energy_weight=0, in_channels = 1, h_dim = 32, lr = 1e-3, batch_size = 100, num_MCMC_iterations = 3, temperature = 0.1, latent_vector_dim = 64):
         super().__init__()
 
         self.sampler = torch.multinomial
+        self.scaler = scaler
         if model_type == 'QUBO':
             self.model_type = 'QUBO'
             num_logits = 2
@@ -95,12 +96,15 @@ class BVAE(pl.LightningModule):
 
         #bernoulli sampling
         sampled_vector = self.sampler(probabilities, 1, True)
-
+        sampled_vector = self.scaler(sampled_vector)
+        #step above takes care of this
+        """
         if (self.model_type == "Blume-Capel"):
             sampled_vector -= 1
         elif (self.model_type == "Ising"):
             sampled_vector *= 2
             sampled_vector -= 1
+        """
 
         original_sampled_vector = sampled_vector.clone()
 

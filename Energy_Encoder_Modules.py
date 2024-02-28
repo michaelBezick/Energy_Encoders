@@ -1,5 +1,35 @@
 import torch
 import torch.nn as nn
+
+from test import quboEnergy
+def dirac_delta(x, y):
+    return (1 - x) * (1 - y) + (x * y)
+
+def Potts_Energy_Fn(vector, interactions):
+    if (len(vector.size()) == 1):
+        vector = vector.unsqueeze(1)
+    dirac_delta_terms = dirac_delta(vector, vector.t())
+    dirac_delta_terms = torch.triu(dirac_delta_terms)
+    energy_matrix = torch.mul(dirac_delta_terms, interactions)
+
+    return torch.sum(energy_matrix)
+
+class Energy_Functions():
+    def get_function(self, model_type):
+        if model_type == 'QUBO':
+            return quboEnergy
+        elif model_type == 'PUBO':
+            return quboEnergy
+        elif model_type == 'Ising':
+            return quboEnergy
+        elif model_type == 'Blume-Capel':
+            return quboEnergy
+        elif model_type == 'Potts':
+            return Potts_Energy_Fn
+        else:
+            raise ValueError("Model does not exist!")
+
+
 class AttnBlock(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
