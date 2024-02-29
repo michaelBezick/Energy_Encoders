@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import torchvision
+from torchvision.models import VGG16_Weights
+
 
 def dirac_delta(x, y):
     return (1 - x) * (1 - y) + (x * y)
@@ -134,7 +136,6 @@ class Block(nn.Module):
         x = self.layer(x)
 
         return x
-
 class VGGPerceptualLoss(torch.nn.Module):
     '''
     Returns perceptual loss of two batches of images
@@ -146,10 +147,10 @@ class VGGPerceptualLoss(torch.nn.Module):
         capacity and size of loss model.
         '''
         blocks = []
-        blocks.append(torchvision.models.vgg16(pretrained=True).features[:4].eval())
-        blocks.append(torchvision.models.vgg16(pretrained=True).features[4:8].eval())
-        blocks.append(torchvision.models.vgg16(pretrained=True).features[8:14].eval())
-        blocks.append(torchvision.models.vgg16(pretrained=True).features[14:20].eval())
+        blocks.append(torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT).features[:4].eval())
+        blocks.append(torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT).features[4:8].eval())
+        blocks.append(torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT).features[8:14].eval())
+        blocks.append(torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT).features[14:20].eval())
         for bl in blocks:
             for p in bl.parameters():
                 p.requires_grad = False

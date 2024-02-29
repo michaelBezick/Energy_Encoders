@@ -20,7 +20,7 @@ epochs = 10_000
 reconstruction_weight = 0.6
 perceptual_weight = 0.025
 energy_weight = 1.5
-h_dim = 32
+h_dim = 8
 batch_size = 100
 
 ###############################################################
@@ -75,7 +75,7 @@ train_loader = DataLoader(labeled_dataset, num_workers = num_workers, batch_size
 logger = CSVLogger(save_dir="logs/", name=experiment_name)
 
 lr_monitor = LearningRateMonitor(logging_interval = 'step')
-trainer = pl.Trainer(logger = logger, devices = num_devices, num_nodes = num_nodes, accelerator = "gpu", detect_anomaly=True, log_every_n_steps=2, max_epochs=epochs)
+trainer = pl.Trainer(logger = logger, devices = num_devices, num_nodes = num_nodes, accelerator = "gpu", log_every_n_steps=2, max_epochs=epochs)
 
 if resume_from_checkpoint:
     trainer.fit(model = bvae, train_dataloaders = train_loader, ckpt_path = checkpoint_path)
