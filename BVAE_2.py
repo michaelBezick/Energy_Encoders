@@ -17,10 +17,10 @@ num_workers = 15
 epochs = 10_000
 reconstruction_weight = 0.6
 perceptual_weight = 0.025
-energy_weight = 1.5
+energy_weight = 0.01
 h_dim = 8
-batch_size = 10
-num_vars = 6
+batch_size = 20
+num_vars = 8
 
 ###############################################################
 
@@ -35,7 +35,7 @@ energy_fn = polytensor.polynomial.DensePolynomial(terms)
 energy_loss_fn = CorrelationalLoss(10., 0.01, 0.)
 model_type = Model_Type.QUBO
 
-bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature, batch_size=batch_size)
+bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, energy_weight=energy_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature, batch_size=batch_size)
 
 temperature_str = str(temperature).replace('.', ',')
 model_type_str = bvae.model_type

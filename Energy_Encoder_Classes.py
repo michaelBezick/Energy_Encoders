@@ -157,7 +157,7 @@ class BVAE(pl.LightningModule):
         total_loss = perceptual_loss_value + reconstruction_loss + energy_loss
         self.log("reconstruction_loss", reconstruction_loss)
         self.log("perceptual_loss", perceptual_loss_value)
-        self.log("energy_loss", energy_loss)
+        self.log("energy_loss", energy_loss, prog_bar=True, on_step=True)
         self.log("train_loss", total_loss, prog_bar=True, on_step=True)
 
 
@@ -218,7 +218,6 @@ class CorrelationalLoss():
         self.slope = slope
 
         x = pearson_correlation_coefficient
-        print(x)
         correlation_loss = torch.log((0.5 * (x + 1))/(1 - 0.5 * (x + 1)))
 
         average_energy_loss = average_energy
@@ -232,7 +231,6 @@ class CorrelationalLoss():
         self.correlation_loss = correlation_loss * self.correlation_weight
         self.average_energy_loss = average_energy_loss * self.energy_weight
         self.slope_loss = slope_loss * self.slope_weight
-
 
         return loss_combined
 
