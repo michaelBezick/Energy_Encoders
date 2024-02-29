@@ -1,3 +1,4 @@
 Makefile
 polytensor
 .venv
+logs
