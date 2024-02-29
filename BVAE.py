@@ -4,7 +4,7 @@ import torch
 from Energy_Encoder_Classes import BVAE, CorrelationalLoss, Model_Type, LabeledDataset
 import polytensor.polytensor as polytensor
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
-from pytorch_lightning.loggers import CSVLogger
+from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
@@ -70,7 +70,8 @@ labeled_dataset = LabeledDataset(dataset, labels)
 
 train_loader = DataLoader(labeled_dataset, num_workers = num_workers, batch_size = batch_size, shuffle = True, drop_last = True)
 
-logger = CSVLogger(save_dir="logs/", name=experiment_name)
+#logger = CSVLogger(save_dir="logs/", name=experiment_name)
+logger = TensorBoardLogger(save_dir="logs/", name=experiment_name)
 
 lr_monitor = LearningRateMonitor(logging_interval = 'step')
 trainer = pl.Trainer(logger = logger, devices = num_devices, num_nodes = num_nodes, accelerator = "gpu", log_every_n_steps=2, max_epochs=epochs)
