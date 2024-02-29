@@ -1,57 +1,60 @@
 import os
-from torch import optim, nn, utils, Tensor
-from torchvision.datasets import MNIST
-from torchvision.transforms import ToTensor
-import pytorch_lightning as pl
-from LDM_Classes import VAE_GAN, LabeledDataset
 import numpy as np
 import torch
+from Energy_Encoder_Classes import BVAE, CorrelationalLoss, Model_Type, LabeledDataset
+import polytensor.polytensor as polytensor
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+from pytorch_lightning.loggers import CSVLogger
 from torch.utils.data import DataLoader
-from pytorch_lightning.callbacks import LearningRateMonitor
-from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.callbacks import ModelCheckpoint
-import torchvision.transforms as transforms
-import tensorflow as tf
-import os
+import pytorch_lightning as pl
 
-num_MCMC_iterations = 0
+num_MCMC_iterations = 3
 temperature = 0.1
-resume_from_checkpoint = True
+resume_from_checkpoint = False
+num_devices = 2
+num_nodes = 2
+num_workers = 1
+epochs = 10_000
+reconstruction_weight = 0.6
+perceptual_weight = 0.025
+energy_weight = 0.01
+h_dim = 128
+batch_size = 100
+num_vars = 64
 
 ###############################################################
 
-temperature_str = str(temperature).replace('.', ',')
+num_per_degree = [num_vars, num_vars * (num_vars - 1) // 2]
+sample_fn = lambda: torch.randn(1, device='cuda')
+terms = polytensor.generators.coeffPUBORandomSampler(
+        n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
+        )
 
-experiment_name = f"{num_MCMC_iterations}_MCMC_temp_{temperature_str}"
+terms = polytensor.generators.denseFromSparse(terms, num_vars)
+energy_fn = polytensor.polynomial.DensePolynomial(terms)
+energy_loss_fn = CorrelationalLoss(10., 0.01, 0.)
+model_type = Model_Type.QUBO
+
+bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, energy_weight=energy_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature, batch_size=batch_size)
+
+temperature_str = str(temperature).replace('.', ',')
+model_type_str = bvae.model_type
+
+experiment_name = f"{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}"
+
+checkpoint_path = ""
 if resume_from_checkpoint:
-    checkpoint_path1 = f"./logs/{num_MCMC_iterations}_MCMC_temp_{temperature_str}/"
+    checkpoint_path1 = f"./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/"
     checkpoint_path2 = os.listdir(checkpoint_path1)[-1]
     checkpoint_path = os.path.join(checkpoint_path1, checkpoint_path2)
     checkpoint_path = checkpoint_path + "/checkpoints/"
     file_checkpoint = os.listdir(checkpoint_path)[0]
     checkpoint_path = os.path.join(checkpoint_path, file_checkpoint)
 
-num_devices = 3
-num_nodes = 4
-num_workers = 1
-accelerator = "gpu"
-batch_size = 100
-epochs = -1
-
-reconstruction_term = 0.6
-perceptual_term = 0.025
-kl_term = 0
-adv_term = 0#1
-energy_loss_term = 1.5
-lr = 1e-3
-latent_vector_dim=64 
-
 checkpoint_callback = ModelCheckpoint(filename = "good", every_n_train_steps = 300)
 
 torch.set_float32_matmul_precision('high')
 
-QUBO_matrix = torch.load("QUBO_matrix.pt")
-vae = VAE_GAN(reconstruction_term, perceptual_term, kl_term, adv_term, energy_loss_term, 1, 128, lr = lr, num_MCMC_iterations=num_MCMC_iterations, temperature = temperature, latent_vector_dim=latent_vector_dim, batch_size=batch_size, QUBO_matrix=QUBO_matrix, min_energy_vector = min_energy_vector) #previous dim was 128
 dataset = np.expand_dims(np.load("top_0.npy"), 1)
 normalizedDataset = (dataset - np.min(dataset)) / (np.max(dataset) - np.min(dataset))
     
@@ -61,19 +64,18 @@ normalizedDataset = normalizedDataset.astype(np.float32)
 
 dataset = torch.from_numpy(normalizedDataset)
 
-labels = np.squeeze(np.load('FOM_labels.npy'))
+labels = torch.from_numpy(np.squeeze(np.load('FOM_labels.npy')))
 
 labeled_dataset = LabeledDataset(dataset, labels)
 
 train_loader = DataLoader(labeled_dataset, num_workers = num_workers, batch_size = batch_size, shuffle = True, drop_last = True)
 
-logger = TensorBoardLogger(save_dir='logs/', name=experiment_name)
+logger = CSVLogger(save_dir="logs/", name=experiment_name)
 
 lr_monitor = LearningRateMonitor(logging_interval = 'step')
-trainer = pl.Trainer(logger = logger, devices = num_devices, num_nodes = num_nodes, accelerator = "gpu", detect_anomaly=True, log_every_n_steps=2, max_epochs=epochs)
-
+trainer = pl.Trainer(logger = logger, devices = num_devices, num_nodes = num_nodes, accelerator = "gpu", log_every_n_steps=2, max_epochs=epochs)
 
 if resume_from_checkpoint:
-    trainer.fit(model = vae, train_dataloaders = train_loader, ckpt_path = checkpoint_path)
+    trainer.fit(model = bvae, train_dataloaders = train_loader, ckpt_path = checkpoint_path)
 else:
-    trainer.fit(model = vae, train_dataloaders = train_loader)
+    trainer.fit(model = bvae, train_dataloaders = train_loader)
