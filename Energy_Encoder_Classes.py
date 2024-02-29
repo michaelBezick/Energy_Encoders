@@ -8,28 +8,48 @@ import pytorch_lightning as pl
 from torch import optim
 from torch.utils.data import Dataset
 from Energy_Encoder_Modules import AttnBlock, VGGPerceptualLoss, ResnetBlockVAE
+from enum import Enum
+
+class Model_Type(Enum):
+    QUBO = 1
+    PUBO = 2
+    ISING = 3
+    BLUME_CAPEL = 4
+    POTTS = 5
+
+
+def blume_capel_scale(x):
+    return x - 1
+def ising_scale(x):
+    return 2 * x - 1
+def no_scale(x):
+    return x
 
 class BVAE(pl.LightningModule):
-    def __init__(self, energy_fn, energy_loss_fn, scaler, model_type = 'QUBO', reconstruction_weight=0, perceptual_weight=0, energy_weight=0, in_channels = 1, h_dim = 32, lr = 1e-3, batch_size = 100, num_MCMC_iterations = 3, temperature = 0.1, latent_vector_dim = 64):
+    def __init__(self, energy_fn, energy_loss_fn, model_type = Model_Type.QUBO, reconstruction_weight=0., perceptual_weight=0., energy_weight=0., in_channels = 1, h_dim = 32, lr = 1e-3, batch_size = 100, num_MCMC_iterations = 3, temperature = 0.1, latent_vector_dim = 64):
         super().__init__()
 
         self.sampler = torch.multinomial
-        self.scaler = scaler
-        if model_type == 'QUBO':
+        if model_type == Model_Type.QUBO:
             self.model_type = 'QUBO'
             num_logits = 2
-        elif model_type == 'PUBO':
+            self.scaler = no_scale
+        elif model_type == Model_Type.PUBO:
             self.model_type = 'PUBO'
             num_logits = 2
-        elif model_type == 'Ising':
+            self.scaler = no_scale
+        elif model_type == Model_Type.ISING:
             self.model_type = 'Ising'
             num_logits = 2
-        elif model_type == 'Blume-Capel':
+            self.scaler = ising_scale
+        elif model_type == Model_Type.BLUME_CAPEL:
             self.model_type = 'Blume-Capel'
             num_logits = 3
-        elif model_type == 'Potts':
+            self.scaler = blume_capel_scale
+        elif model_type == Model_Type.POTTS:
             self.model_type = 'Potts'
             num_logits = 2
+            self.scaler = no_scale
         else:
             raise ValueError("Model does not exist!")
 
@@ -97,14 +117,6 @@ class BVAE(pl.LightningModule):
         #bernoulli sampling
         sampled_vector = self.sampler(probabilities, 1, True)
         sampled_vector = self.scaler(sampled_vector)
-        #step above takes care of this
-        """
-        if (self.model_type == "Blume-Capel"):
-            sampled_vector -= 1
-        elif (self.model_type == "Ising"):
-            sampled_vector *= 2
-            sampled_vector -= 1
-        """
 
         original_sampled_vector = sampled_vector.clone()
 
