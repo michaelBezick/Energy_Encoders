@@ -1,6 +1,7 @@
 from torch import nn
 import math as m
 import torch
+from torch._C import _propagate_and_assign_input_shapes
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
@@ -16,7 +17,6 @@ class Model_Type(Enum):
     ISING = 3
     BLUME_CAPEL = 4
     POTTS = 5
-
 
 def blume_capel_scale(x):
     return x - 1
@@ -54,6 +54,7 @@ class BVAE(pl.LightningModule):
             raise ValueError("Model does not exist!")
 
         self.automatic_optimization = False
+        self.num_logits = num_logits
 
         self.batch_size = batch_size
         self.latent_vector_dim = latent_vector_dim
@@ -84,8 +85,8 @@ class BVAE(pl.LightningModule):
 
         s_prime = s.scatter(1, random_indices, 1 - s.gather(1, random_indices))
 
-        s_energy = self.energy_fn(s)
-        s_prime_energy = self.energy_fn(s_prime)
+        s_energy = torch.squeeze(self.energy_fn(s))
+        s_prime_energy = torch.squeeze(self.energy_fn(s_prime))
         e_matrix = m.e * torch.ones((self.batch_size), device=self.device)
         acceptance_prob_RHS = torch.pow(e_matrix, (s_energy - s_prime_energy) / (self.temperature))        
         acceptance_prob_LHS = torch.ones((self.batch_size), device=self.device)
@@ -112,13 +113,14 @@ class BVAE(pl.LightningModule):
 
         logits = self.vae.encode(x)
 
-        probabilities = F.softmax(logits)
+        probabilities = F.softmax(logits, dim=2)
 
-        #bernoulli sampling
-        sampled_vector = self.sampler(probabilities, 1, True)
+        probabilities = probabilities.view(-1, self.num_logits)
+        sampled_vector = self.sampler(probabilities, 1, True).float()
         sampled_vector = self.scaler(sampled_vector)
-
+        sampled_vector = sampled_vector.view(self.batch_size, self.latent_vector_dim)
         original_sampled_vector = sampled_vector.clone()
+        probabilities = probabilities.view(self.batch_size, -1, self.num_logits)
 
         #MCMC
         transitioned_vectors = sampled_vector
@@ -126,8 +128,10 @@ class BVAE(pl.LightningModule):
             transitioned_vectors = self.MCMC_step(transitioned_vectors)
 
         #straight through gradient copying
-        transitioned_vectors_with_gradient = (transitioned_vectors - probabilities).detach() + probabilities
-        original_sampled_vector_with_gradient = (original_sampled_vector - probabilities).detach() + probabilities
+        probabilities = torch.where(transitioned_vectors==0, probabilities[:,:,0], probabilities[:,:,1])
+        transitioned_vectors_with_gradient = (transitioned_vectors - probabilities).detach() + probabilities #probabilities
+        # need to make this one hot most likely
+        original_sampled_vector_with_gradient = (original_sampled_vector - probabilities).detach() + probabilities #probabilities
 
         x_hat = self.vae.decode(transitioned_vectors_with_gradient)
 
@@ -137,9 +141,9 @@ class BVAE(pl.LightningModule):
         gridGenerated = torchvision.utils.make_grid(sample_imgs_generated)
         gridOriginal = torchvision.utils.make_grid(sample_imgs_original)
 
-        if self.global_step % 10 == 0:
-            self.logger.experiment.add_image("Generated_images", gridGenerated, self.global_step)
-            self.logger.experiment.add_image("Original_images", gridOriginal, self.global_step)
+#        if self.global_step % 10 == 0:
+#            self.logger.experiment.add_image("Generated_images", gridGenerated, self.global_step)
+#            self.logger.experiment.add_image("Original_images", gridOriginal, self.global_step)
 
         
         #reconstruction quality
@@ -154,7 +158,9 @@ class BVAE(pl.LightningModule):
         self.log("reconstruction_loss", reconstruction_loss)
         self.log("perceptual_loss", perceptual_loss_value)
         self.log("energy_loss", energy_loss)
-        self.log("train_loss", total_loss)
+        self.log("train_loss", total_loss, prog_bar=True, on_step=True)
+
+
 
         self.manual_backward(total_loss)
         opt_VAE.step()
@@ -175,6 +181,8 @@ class BVAE(pl.LightningModule):
         if epoch < warmup_epochs:
             return (epoch + 1) / warmup_epochs
         return 1
+    def on_train_start(self):
+        self.energy_fn = self.energy_fn.to(self.device)
 
 class CorrelationalLoss():
     """
@@ -210,8 +218,8 @@ class CorrelationalLoss():
         self.slope = slope
 
         x = pearson_correlation_coefficient
+        print(x)
         correlation_loss = torch.log((0.5 * (x + 1))/(1 - 0.5 * (x + 1)))
-        #correlation_loss = -torch.log(-0.5 * (x - 1))
 
         average_energy_loss = average_energy
 
@@ -303,6 +311,8 @@ class VAE(pl.LightningModule):
         self.batch_size = batch_size
 
         self.lr = lr
+        self.problem_size = problem_size
+        self.num_logits = num_logits
 
         self.attention1E = AttnBlock(h_dim)
         self.attention2E = AttnBlock(h_dim)
@@ -360,7 +370,7 @@ class VAE(pl.LightningModule):
                                      )
     def encode(self, x):
         logits = self.encoder(x)
-        return logits
+        return logits.view(self.batch_size, self.problem_size, self.num_logits)
     
     def decode(self, z):
         return self.decoder(z)

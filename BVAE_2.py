@@ -13,21 +13,19 @@ temperature = 0.1
 resume_from_checkpoint = False
 num_devices = 1
 num_nodes = 1
-num_workers = 1
-accelerator = "gpu"
-batch_size = 100
+num_workers = 15
 epochs = 10_000
 reconstruction_weight = 0.6
 perceptual_weight = 0.025
 energy_weight = 1.5
 h_dim = 8
-batch_size = 100
+batch_size = 10
+num_vars = 6
 
 ###############################################################
 
-num_vars = 64
-num_per_degree = [64, 64 * 63 // 2]
-sample_fn = lambda: torch.randn(1)
+num_per_degree = [num_vars, num_vars * (num_vars - 1) // 2]
+sample_fn = lambda: torch.randn(1, device='cuda')
 terms = polytensor.generators.coeffPUBORandomSampler(
         n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
         )
@@ -37,7 +35,7 @@ energy_fn = polytensor.polynomial.DensePolynomial(terms)
 energy_loss_fn = CorrelationalLoss(10., 0.01, 0.)
 model_type = Model_Type.QUBO
 
-bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature)
+bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature, batch_size=batch_size)
 
 temperature_str = str(temperature).replace('.', ',')
 model_type_str = bvae.model_type
@@ -66,7 +64,7 @@ normalizedDataset = normalizedDataset.astype(np.float32)
 
 dataset = torch.from_numpy(normalizedDataset)
 
-labels = np.squeeze(np.load('FOM_labels.npy'))
+labels = torch.from_numpy(np.squeeze(np.load('FOM_labels.npy')))
 
 labeled_dataset = LabeledDataset(dataset, labels)
 
