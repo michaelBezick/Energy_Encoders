@@ -8,11 +8,11 @@ from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
-num_MCMC_iterations = 3
+num_MCMC_iterations = 0
 temperature = 0.1
 resume_from_checkpoint = False
-num_devices = 2
-num_nodes = 2
+num_devices = 3
+num_nodes = 3
 num_workers = 1
 epochs = 10_000
 reconstruction_weight = 0.6
