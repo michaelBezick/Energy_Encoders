@@ -1,7 +1,6 @@
 from torch import nn
 import math as m
 import torch
-from torch._C import _propagate_and_assign_input_shapes
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
@@ -33,23 +32,23 @@ class BVAE(pl.LightningModule):
         if model_type == Model_Type.QUBO:
             self.model_type = 'QUBO'
             num_logits = 2
-            self.scaler = no_scale
+            self.scale = torch.Tensor([0., 1.])
         elif model_type == Model_Type.PUBO:
             self.model_type = 'PUBO'
             num_logits = 2
-            self.scaler = no_scale
+            self.scale = torch.Tensor([0., 1.])
         elif model_type == Model_Type.ISING:
             self.model_type = 'Ising'
             num_logits = 2
-            self.scaler = ising_scale
+            self.scale = torch.Tensor([-1., 1.])
         elif model_type == Model_Type.BLUME_CAPEL:
             self.model_type = 'Blume-Capel'
             num_logits = 3
-            self.scaler = blume_capel_scale
+            self.scale = torch.Tensor([-1., 0., 1.])
         elif model_type == Model_Type.POTTS:
             self.model_type = 'Potts'
             num_logits = 2
-            self.scaler = no_scale
+            self.scale = torch.Tensor([0., 1.])
         else:
             raise ValueError("Model does not exist!")
 
@@ -116,23 +115,30 @@ class BVAE(pl.LightningModule):
         probabilities = F.softmax(logits, dim=2)
 
         probabilities = probabilities.view(-1, self.num_logits)
-        sampled_vector = self.sampler(probabilities, 1, True).float()
-        sampled_vector = self.scaler(sampled_vector)
-        sampled_vector = sampled_vector.view(self.batch_size, self.latent_vector_dim)
+        sampled_vector = self.sampler(probabilities, 1, True).view(self.batch_size, self.latent_vector_dim)
+        one_hotted = F.one_hot(sampled_vector)
+        probabilities = probabilities.view(self.batch_size, self.latent_vector_dim, self.num_logits)
+        copied_grad = (one_hotted - probabilities).detach() + probabilities
+        sampled_vector = copied_grad * self.scale
         original_sampled_vector = sampled_vector.clone()
-        probabilities = probabilities.view(self.batch_size, -1, self.num_logits)
 
-        #MCMC
-        transitioned_vectors = sampled_vector
-        for _ in range(self.num_MCMC_iterations):
-            transitioned_vectors = self.MCMC_step(transitioned_vectors)
-
-        #straight through gradient copying
-        probabilities = torch.where(transitioned_vectors==0, probabilities[:,:,0], probabilities[:,:,1])
-        transitioned_vectors_with_gradient = (transitioned_vectors - probabilities).detach() + probabilities #probabilities
-        # need to make this one hot most likely
-        original_sampled_vector_with_gradient = (original_sampled_vector - probabilities).detach() + probabilities #probabilities
-
+#        #MCMC
+#        transitioned_vectors = sampled_vector
+#        for _ in range(self.num_MCMC_iterations):
+#            transitioned_vectors = self.MCMC_step(transitioned_vectors)
+#
+#
+#        #straight through gradient copying
+#        probabilities = torch.where(transitioned_vectors==0, probabilities[:,:,0], probabilities[:,:,1])
+#        transitioned_vectors_with_gradient = (transitioned_vectors - probabilities).detach() + probabilities #probabilities
+#        # need to make this one hot most likely
+#        original_sampled_vector_with_gradient = (original_sampled_vector - probabilities).detach() + probabilities #probabilities
+#
+        """
+        Not doing MCMC right now to see if one hot performs okay.
+        """
+        transitioned_vectors_with_gradient = original_sampled_vector
+        original_sampled_vector_with_gradient = original_sampled_vector
         x_hat = self.vae.decode(transitioned_vectors_with_gradient)
 
         #logging generated images
@@ -141,9 +147,9 @@ class BVAE(pl.LightningModule):
         gridGenerated = torchvision.utils.make_grid(sample_imgs_generated)
         gridOriginal = torchvision.utils.make_grid(sample_imgs_original)
 
-#        if self.global_step % 10 == 0:
-#            self.logger.experiment.add_image("Generated_images", gridGenerated, self.global_step)
-#            self.logger.experiment.add_image("Original_images", gridOriginal, self.global_step)
+        if self.global_step % 10 == 0:
+            self.logger.experiment.add_image("Generated_images", gridGenerated, self.global_step)
+            self.logger.experiment.add_image("Original_images", gridOriginal, self.global_step)
 
         
         #reconstruction quality
@@ -183,6 +189,7 @@ class BVAE(pl.LightningModule):
         return 1
     def on_train_start(self):
         self.energy_fn = self.energy_fn.to(self.device)
+        self.scale = self.scale.to(self.device)
 
 class CorrelationalLoss():
     """

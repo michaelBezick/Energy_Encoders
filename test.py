@@ -4,7 +4,31 @@ from torch.functional import Tensor
 import torch.nn.functional as F
 import torch.nn as nn
 from Energy_Encoder_Modules import Potts_Energy_Fn
-#blume capel test
+
+
+#blume capel example
+
+scale = torch.Tensor([-1, 0, 1])
+logits = torch.randn(100, 6, 3)
+logits = F.softmax(logits, dim=2)
+logits = logits.view(-1, 3)
+sampled = torch.multinomial(logits, 1, True)
+sampled = sampled.view(100, 6)
+one_hot = F.one_hot(sampled)
+logits = logits.view(100, 6, 3)
+copied_grad = (one_hot - logits).detach() + logits
+print(copied_grad)
+print(copied_grad.size())
+scaled = copied_grad * scale
+print(scaled.size())
+summed = torch.einsum("ijk->ij", scaled)
+print(summed[0, :])
+print(one_hot[0, :, :])
+exit()
+
+
+
+
 
 interactions = torch.randn(64, 64)
 interactions = torch.triu(interactions)
