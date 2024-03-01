@@ -11,8 +11,8 @@ import pytorch_lightning as pl
 num_MCMC_iterations = 0
 temperature = 0.1
 resume_from_checkpoint = False
-num_devices = 3
-num_nodes = 3
+num_devices = 2
+num_nodes = 2
 num_workers = 1
 epochs = 10_000
 reconstruction_weight = 0.6
@@ -21,6 +21,7 @@ energy_weight = 1e-3
 h_dim = 128
 batch_size = 100
 num_vars = 64
+model_type = Model_Type.BLUME_CAPEL
 
 ###############################################################
 
@@ -33,7 +34,6 @@ terms = polytensor.generators.coeffPUBORandomSampler(
 terms = polytensor.generators.denseFromSparse(terms, num_vars)
 energy_fn = polytensor.polynomial.DensePolynomial(terms)
 energy_loss_fn = CorrelationalLoss(10., 0.01, 0.)
-model_type = Model_Type.QUBO
 
 bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, energy_weight=energy_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature, batch_size=batch_size)
 
