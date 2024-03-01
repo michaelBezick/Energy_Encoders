@@ -119,7 +119,7 @@ class BVAE(pl.LightningModule):
         one_hotted = F.one_hot(sampled_vector)
         probabilities = probabilities.view(self.batch_size, self.latent_vector_dim, self.num_logits)
         copied_grad = (one_hotted - probabilities).detach() + probabilities
-        sampled_vector = torch.einsum("ijk->ij", copied_grad * self.scale)
+        sampled_vector = torch.einsum("ijk,k->ij", copied_grad, self.scale)
         original_sampled_vector = sampled_vector.clone()
 
 #        #MCMC

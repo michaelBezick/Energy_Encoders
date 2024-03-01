@@ -22,8 +22,8 @@ print(copied_grad.size())
 scaled = copied_grad * scale
 print(scaled.size())
 summed = torch.einsum("ijk->ij", scaled)
-print(summed[0, :])
-print(one_hot[0, :, :])
+summed_2 = torch.einsum("ijk,k->ij", copied_grad, scale)
+print(summed==summed_2)
 exit()
 
 
