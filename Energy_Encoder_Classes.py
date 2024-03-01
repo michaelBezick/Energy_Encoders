@@ -164,6 +164,7 @@ class BVAE(pl.LightningModule):
         self.log("reconstruction_loss", reconstruction_loss)
         self.log("perceptual_loss", perceptual_loss_value)
         self.log("energy_loss", energy_loss, prog_bar=True, on_step=True)
+        self.log("pearson_correlation_coefficient", self.energy_loss_fn.correlation)
         self.log("train_loss", total_loss, prog_bar=True, on_step=True)
 
 
