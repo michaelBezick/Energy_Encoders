@@ -2,3 +2,4 @@ Makefile
 polytensor
 .venv
 logs
+slurm*
