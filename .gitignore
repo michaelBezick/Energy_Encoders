@@ -3,3 +3,4 @@ polytensor
 .venv
 logs
 slurm*
+test*

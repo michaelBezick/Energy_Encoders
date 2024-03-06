@@ -12,4 +12,4 @@ terms = polytensor.generators.coeffPUBORandomSampler(
 energy_fn = polytensor.SparsePolynomial(terms, "cuda")
 
 vector = torch.bernoulli(0.5 * torch.ones(64)).float()
-print(energy_fn(vector))
+polytensor.serialize.tojson(energy_fn)

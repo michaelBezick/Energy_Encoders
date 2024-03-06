@@ -35,15 +35,19 @@ terms = polytensor.generators.denseFromSparse(terms, num_vars)
 energy_fn = polytensor.polynomial.DensePolynomial(terms)
 energy_loss_fn = CorrelationalLoss(10., 0.01, 0.)
 
-#NEED TO SAVE TERMS
-
-
 
 bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, energy_weight=energy_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature, batch_size=batch_size)
 
 temperature_str = str(temperature).replace('.', ',')
 model_type_str = bvae.model_type
 
+#Saving terms
+
+if not os.path.isdir(f"./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/"):
+    os.mkdir(f"./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/")
+
+coefficients = energy_fn.coefficients
+torch.save(coefficients, "./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/" + "/coefficients_")
 experiment_name = f"{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}"
 
 checkpoint_path = ""
