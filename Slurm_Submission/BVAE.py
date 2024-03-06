@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import torch
-from Energy_Encoder_Classes import BVAE, CorrelationalLoss, Model_Type, LabeledDataset
+from Modules.Energy_Encoder_Classes import BVAE, CorrelationalLoss, Model_Type, LabeledDataset
 import polytensor.polytensor as polytensor
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger

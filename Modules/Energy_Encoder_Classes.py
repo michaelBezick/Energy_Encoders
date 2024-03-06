@@ -147,11 +147,12 @@ class BVAE(pl.LightningModule):
         gridGenerated = torchvision.utils.make_grid(sample_imgs_generated)
         gridOriginal = torchvision.utils.make_grid(sample_imgs_original)
 
-        if self.global_step % 10 == 0:
+        """Tensorboard logging"""
+
+        if self.global_step % 1000 == 0:
             self.logger.experiment.add_image("Generated_images", gridGenerated, self.global_step)
             self.logger.experiment.add_image("Original_images", gridOriginal, self.global_step)
 
-        
         #reconstruction quality
         reconstruction_loss = F.mse_loss(x_hat, x) * self.reconstruction_weight
         perceptual_loss_value = self.perceptual_loss(x_hat, x) * self.perceptual_weight
