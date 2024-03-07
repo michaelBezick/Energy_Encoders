@@ -77,29 +77,32 @@ class BVAE(pl.LightningModule):
 
         self.sigmoid = nn.Sigmoid()
 
-    def MCMC_step(self, batch):
-        s = batch
+    def MCMC_step(self, initial_vectors):
+        #get random indices
+        indices = torch.randint(0, self.latent_vector_dim, (self.batch_size, 1))
 
-        random_indices = torch.randint(self.latent_vector_dim, size = (self.batch_size, 1), device=self.device)
+        #get new spins corresponding to indices
+        new_spins = torch.randint(0, self.num_logits, (self.batch_size, 1))
+        new_spins = F.one_hot(new_spins, self.num_logits).float()
+        new_spins = torch.einsum("ijk,k->ij", new_spins, self.scale)
 
-        s_prime = s.scatter(1, random_indices, 1 - s.gather(1, random_indices))
+        transitioned_vectors = initial_vectors.scatter(dim=1, index=indices, src=new_spins)
 
-        s_energy = torch.squeeze(self.energy_fn(s))
-        s_prime_energy = torch.squeeze(self.energy_fn(s_prime))
+        #need to move to transitioned vectors with acceptance probabilities
+        initial_energy = torch.squeeze(self.energy_fn(initial_vectors))
+        transitioned_energy = torch.squeeze(self.energy_fn(transitioned_vectors))
         e_matrix = m.e * torch.ones((self.batch_size), device=self.device)
-        acceptance_prob_RHS = torch.pow(e_matrix, (s_energy - s_prime_energy) / (self.temperature))        
+        acceptance_prob_RHS = torch.pow(e_matrix, (initial_energy - transitioned_energy) / (self.temperature))        
         acceptance_prob_LHS = torch.ones((self.batch_size), device=self.device)
         acceptance_probability = torch.min(acceptance_prob_LHS, acceptance_prob_RHS)
 
-        s_conjoined = torch.cat((s.unsqueeze(1), s_prime.unsqueeze(1)), dim = 1)
+        acceptance_sample = torch.bernoulli(acceptance_probability).unsqueeze(1).int()
+        acceptance_sample_expanded = acceptance_sample.expand(self.batch_size, self.latent_vector_dim)
 
-        sample_acceptance = torch.bernoulli(acceptance_probability)
+        #if acceptance_sample = 1, move to next one
+        output = torch.where(acceptance_sample_expanded == 1, transitioned_vectors, initial_vectors)
 
-        sample_acceptance = sample_acceptance.unsqueeze(1)
-
-        transitioned_vectors = torch.where(sample_acceptance == 0, s_conjoined[:, 0, :], s_conjoined[:, 1, :])
-
-        return transitioned_vectors
+        return output
 
     def scale_vector_copy_gradient(self, x, probabilities):
         '''
