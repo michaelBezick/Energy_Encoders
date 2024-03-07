@@ -1,5 +1,7 @@
 #!/bin/bash
 # FILENAME: job2.sh
+cd $SLURM_SUBMIT_DIR
+cd ./Blume-Capel
 module load anaconda
 pip install beartype
 export WORLD_SIZE=NUM_GPUS
