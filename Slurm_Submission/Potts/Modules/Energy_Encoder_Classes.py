@@ -163,6 +163,10 @@ class BVAE(pl.LightningModule):
         perceptual_loss_value = self.perceptual_loss(x_hat, x) * self.perceptual_weight
 
         #energy correlation
+        print(self.energy_fn)
+        #print(self.energy_fn.coefficients)
+        #print(self.energy_fn.terms)
+        print(original_sampled_vector_with_gradient)
         energy = self.energy_fn(original_sampled_vector_with_gradient)
         energy_loss = self.energy_loss_fn(FOM_labels, energy) * self.energy_weight
 
