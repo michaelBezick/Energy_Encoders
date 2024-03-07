@@ -25,27 +25,14 @@ model_type = Model_Type.BLUME_CAPEL
 
 ###############################################################
 
-num_per_degree = [num_vars, num_vars * (num_vars - 1) // 2]
-sample_fn = lambda: torch.randn(1, device='cuda')
-terms = polytensor.generators.coeffPUBORandomSampler(
-        n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
-        )
+energy_fn = torch.load("Blume-Capel_energy_fn.pt")
 
-terms = polytensor.generators.denseFromSparse(terms, num_vars)
-energy_fn = polytensor.polynomial.DensePolynomial(terms)
 energy_loss_fn = CorrelationalLoss(10., 0.01, 0.)
-
 
 bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, energy_weight=energy_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature, batch_size=batch_size)
 
 temperature_str = str(temperature).replace('.', ',')
 model_type_str = bvae.model_type
-
-#Saving terms
-
-if not os.path.isdir(f"./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/"):
-    os.mkdir(f"./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/")
-torch.save(energy_fn, f"./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/" + "/energy_fn.pt")
 
 experiment_name = f"{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}"
 
