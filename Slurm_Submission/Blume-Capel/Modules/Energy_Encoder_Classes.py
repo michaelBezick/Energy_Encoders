@@ -70,6 +70,7 @@ class BVAE(pl.LightningModule):
         self.temperature = temperature
 
         self.energy_fn = energy_fn
+        self.energy_fn = self.energy_fn.to(self.device)
         self.energy_loss_fn = energy_loss_fn
 
         self.perceptual_loss = VGGPerceptualLoss()
@@ -193,8 +194,6 @@ class BVAE(pl.LightningModule):
         return 1
     def on_train_start(self):
         self.energy_fn = self.energy_fn.to(self.device)
-        self.energy_fn.terms = self.energy_fn.terms.to(self.device)
-        self.energy_fn.coefficients = self.energy_fn.coefficients.to(self.device)
         self.scale = self.scale.to(self.device)
 
 class CorrelationalLoss():

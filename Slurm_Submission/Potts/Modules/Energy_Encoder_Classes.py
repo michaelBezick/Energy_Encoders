@@ -70,6 +70,7 @@ class BVAE(pl.LightningModule):
         self.temperature = temperature
 
         self.energy_fn = energy_fn
+        self.energy_fn = self.energy_fn.to(self.device)
         self.energy_loss_fn = energy_loss_fn
 
         self.perceptual_loss = VGGPerceptualLoss()
