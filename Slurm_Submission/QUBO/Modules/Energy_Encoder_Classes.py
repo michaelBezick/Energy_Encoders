@@ -139,7 +139,7 @@ class BVAE(pl.LightningModule):
         shifted_vector = transitioned_vectors + self.shift
 
         """"""
-        transitioned_vectors_with_gradient = self.scale_vector_copy_gradient(shifted_vector.type(torch.int8), probabilities)
+        transitioned_vectors_with_gradient = self.scale_vector_copy_gradient(shifted_vector.long(), probabilities)
         """"""
 
         x_hat = self.vae.decode(transitioned_vectors_with_gradient)
