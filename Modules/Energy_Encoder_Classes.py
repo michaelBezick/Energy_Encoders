@@ -33,22 +33,22 @@ class BVAE(pl.LightningModule):
             self.model_type = 'QUBO'
             num_logits = 2
             self.scale = torch.Tensor([0., 1.])
+            self.shift = 0.
         elif model_type == Model_Type.PUBO:
             self.model_type = 'PUBO'
             num_logits = 2
             self.scale = torch.Tensor([0., 1.])
-        elif model_type == Model_Type.ISING:
-            self.model_type = 'Ising'
-            num_logits = 2
-            self.scale = torch.Tensor([-1., 1.])
+            self.shift = 0.
         elif model_type == Model_Type.BLUME_CAPEL:
             self.model_type = 'Blume-Capel'
             num_logits = 3
             self.scale = torch.Tensor([-1., 0., 1.])
+            self.shift = 1.
         elif model_type == Model_Type.POTTS:
             self.model_type = 'Potts'
             num_logits = 2
             self.scale = torch.Tensor([0., 1.])
+            self.shift = 0
         else:
             raise ValueError("Model does not exist!")
 
@@ -101,6 +101,14 @@ class BVAE(pl.LightningModule):
 
         return transitioned_vectors
 
+    def scale_vector_copy_gradient(self, x, probabilities):
+        '''
+        x in index format -> x in scaled format with gradient
+        '''
+        x = F.one_hot(x)
+        copied_grad = (x - probabilities).detach() + probabilities
+        return torch.einsum("ijk,k->ij", copied_grad, self.scale)
+
     def training_step(self, batch, batch_idx):
         x, FOM_labels = batch
 
@@ -114,31 +122,25 @@ class BVAE(pl.LightningModule):
 
         probabilities = F.softmax(logits, dim=2)
 
-        probabilities = probabilities.view(-1, self.num_logits)
-        sampled_vector = self.sampler(probabilities, 1, True).view(self.batch_size, self.latent_vector_dim)
-        one_hotted = F.one_hot(sampled_vector)
-        probabilities = probabilities.view(self.batch_size, self.latent_vector_dim, self.num_logits)
-        copied_grad = (one_hotted - probabilities).detach() + probabilities
-        sampled_vector = torch.einsum("ijk,k->ij", copied_grad, self.scale)
-        original_sampled_vector = sampled_vector.clone()
+        probabilities_condensed = probabilities.view(-1, self.num_logits)
+        sampled_vector = self.sampler(probabilities_condensed, 1, True).view(self.batch_size, self.latent_vector_dim)
+        
+        valid_vector = self.scale_vector_copy_gradient(sampled_vector, probabilities)
 
-#        #MCMC
-#        transitioned_vectors = sampled_vector
-#        for _ in range(self.num_MCMC_iterations):
-#            transitioned_vectors = self.MCMC_step(transitioned_vectors)
-#
-#
-#        #straight through gradient copying
-#        probabilities = torch.where(transitioned_vectors==0, probabilities[:,:,0], probabilities[:,:,1])
-#        transitioned_vectors_with_gradient = (transitioned_vectors - probabilities).detach() + probabilities #probabilities
-#        # need to make this one hot most likely
-#        original_sampled_vector_with_gradient = (original_sampled_vector - probabilities).detach() + probabilities #probabilities
-#
-        """
-        Not doing MCMC right now to see if one hot performs okay.
-        """
-        transitioned_vectors_with_gradient = original_sampled_vector
-        original_sampled_vector_with_gradient = original_sampled_vector
+        """"""
+        original_sampled_vector_with_gradient = valid_vector.clone()
+        """"""
+
+        transitioned_vectors = valid_vector.detach()
+        for _ in range(self.num_MCMC_iterations):
+            transitioned_vectors = self.MCMC_step(transitioned_vectors)
+
+        shifted_vector = transitioned_vectors + self.shift
+
+        """"""
+        transitioned_vectors_with_gradient = self.scale_vector_copy_gradient(shifted_vector, probabilities)
+        """"""
+
         x_hat = self.vae.decode(transitioned_vectors_with_gradient)
 
         #logging generated images
@@ -168,14 +170,11 @@ class BVAE(pl.LightningModule):
         self.log("pearson_correlation_coefficient", self.energy_loss_fn.correlation)
         self.log("train_loss", total_loss, prog_bar=True, on_step=True)
 
-
-
         self.manual_backward(total_loss)
         opt_VAE.step()
         scheduler.step()
         opt_VAE.zero_grad()
         self.untoggle_optimizer(opt_VAE)
-        
 
     def configure_optimizers(self):
         opt_VAE = torch.optim.Adam(self.vae.parameters(), lr = self.lr) #weight_decay=0.01

@@ -4,11 +4,11 @@ import torch
 from Modules.Energy_Encoder_Classes import BVAE, CorrelationalLoss, Model_Type, LabeledDataset
 import polytensor.polytensor as polytensor
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
-from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
+from pytorch_lightning.loggers import TensorBoardLogger
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
-num_MCMC_iterations = 0
+num_MCMC_iterations = 1
 temperature = 0.1
 resume_from_checkpoint = False
 num_devices = 2
@@ -21,7 +21,7 @@ energy_weight = 1e-3
 h_dim = 128
 batch_size = 100
 num_vars = 64
-model_type = Model_Type.BLUME_CAPEL
+model_type = Model_Type.POTTS
 
 ###############################################################
 
@@ -45,9 +45,8 @@ model_type_str = bvae.model_type
 
 if not os.path.isdir(f"./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/"):
     os.mkdir(f"./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/")
+torch.save(energy_fn, f"./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/" + "/energy_fn.pt")
 
-coefficients = energy_fn.coefficients
-torch.save(coefficients, "./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/" + "/coefficients_")
 experiment_name = f"{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}"
 
 checkpoint_path = ""
