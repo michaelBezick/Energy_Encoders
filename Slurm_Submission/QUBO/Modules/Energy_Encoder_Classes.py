@@ -102,6 +102,7 @@ class BVAE(pl.LightningModule):
         return transitioned_vectors
 
     def scale_vector_copy_gradient(self, x, probabilities):
+        print(x)
         '''
         x in index format -> x in scaled format with gradient
         '''
