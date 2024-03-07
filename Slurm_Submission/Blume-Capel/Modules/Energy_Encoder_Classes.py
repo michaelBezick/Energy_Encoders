@@ -103,10 +103,11 @@ class BVAE(pl.LightningModule):
 
     def scale_vector_copy_gradient(self, x, probabilities):
         print(x)
+        print(x.size())
         '''
         x in index format -> x in scaled format with gradient
         '''
-        x = F.one_hot(x)
+        x = F.one_hot(x, self.num_logits)
         copied_grad = (x - probabilities).detach() + probabilities
         return torch.einsum("ijk,k->ij", copied_grad, self.scale)
 
