@@ -79,10 +79,10 @@ class BVAE(pl.LightningModule):
 
     def MCMC_step(self, initial_vectors):
         #get random indices
-        indices = torch.randint(0, self.latent_vector_dim, (self.batch_size, 1))
+        indices = torch.randint(0, self.latent_vector_dim, (self.batch_size, 1), device=self.device)
 
         #get new spins corresponding to indices
-        new_spins = torch.randint(0, self.num_logits, (self.batch_size, 1))
+        new_spins = torch.randint(0, self.num_logits, (self.batch_size, 1), device=self.device)
         new_spins = F.one_hot(new_spins, self.num_logits).float()
         new_spins = torch.einsum("ijk,k->ij", new_spins, self.scale)
 
