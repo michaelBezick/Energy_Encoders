@@ -1,7 +1,7 @@
 Makefile
 polytensor
 .venv
-logs
 slurm*
 test*
 Test
+*.ckpt
