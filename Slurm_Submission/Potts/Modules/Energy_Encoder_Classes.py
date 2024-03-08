@@ -133,6 +133,7 @@ class BVAE(pl.LightningModule):
 
         """"""
         original_sampled_vector_with_gradient = valid_vector.clone()
+        print(original_sampled_vector_with_gradient.dtype)
         """"""
 
         transitioned_vectors = valid_vector.detach()
@@ -164,10 +165,8 @@ class BVAE(pl.LightningModule):
         perceptual_loss_value = self.perceptual_loss(x_hat, x) * self.perceptual_weight
 
         #energy correlation
-        print(self.energy_fn)
-        #print(self.energy_fn.coefficients)
-        #print(self.energy_fn.terms)
-        print(original_sampled_vector_with_gradient)
+        self.energy_fn = self.energy_fn.to(self.device)
+        original_sampled_vector_with_gradient = original_sampled_vector_with_gradient.to(self.device)
         energy = self.energy_fn(original_sampled_vector_with_gradient)
         energy_loss = self.energy_loss_fn(FOM_labels, energy) * self.energy_weight
 
