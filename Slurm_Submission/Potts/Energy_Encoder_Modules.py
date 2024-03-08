@@ -12,28 +12,13 @@ class Potts_Energy_Fn(nn.Module):
         return (1 - x) * (1 - y) + (x * y)
 
     def forward(self, vector):
-
-        if (len(vector.size()) == 1):
-            vector = vector.unsqueeze(1)
-
-        dirac_delta_terms = self.dirac_delta(vector, vector.t())
+        vector = vector.unsqueeze(1)
+        dirac_delta_terms = dirac_delta(vector, torch.transpose(vector, 1, 2))
         dirac_delta_terms = torch.triu(dirac_delta_terms)
         energy_matrix = torch.mul(dirac_delta_terms, self.interactions)
+        energy_matrix = energy_matrix.view(100, -1)
 
-        return torch.sum(energy_matrix)
-
-
-def dirac_delta(x, y):
-    return (1 - x) * (1 - y) + (x * y)
-
-#def forward(vector, interactions):
-#    if (len(vector.size()) == 1):
-#        vector = vector.unsqueeze(1)
-#    dirac_delta_terms = dirac_delta(vector, vector.t())
-#    dirac_delta_terms = torch.triu(dirac_delta_terms)
-#    energy_matrix = torch.mul(dirac_delta_terms, interactions)
-#
-#    return torch.sum(energy_matrix)
+        return torch.sum(energy_matrix, dim = 1)
 
 class AttnBlock(nn.Module):
     def __init__(self, in_channels):
