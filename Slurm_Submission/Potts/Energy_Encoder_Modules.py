@@ -3,18 +3,37 @@ import torch.nn as nn
 import torchvision
 from torchvision.models import VGG16_Weights
 
+class Potts_Energy_Fn(nn.Module):
+    def __init__(self, interactions):
+        super().__init__()
+        self.interactions = interactions
+
+    def dirac_delta(self, x, y):
+        return (1 - x) * (1 - y) + (x * y)
+
+    def forward(self, vector):
+
+        if (len(vector.size()) == 1):
+            vector = vector.unsqueeze(1)
+
+        dirac_delta_terms = self.dirac_delta(vector, vector.t())
+        dirac_delta_terms = torch.triu(dirac_delta_terms)
+        energy_matrix = torch.mul(dirac_delta_terms, self.interactions)
+
+        return torch.sum(energy_matrix)
+
 
 def dirac_delta(x, y):
     return (1 - x) * (1 - y) + (x * y)
 
-def Potts_Energy_Fn(vector, interactions):
-    if (len(vector.size()) == 1):
-        vector = vector.unsqueeze(1)
-    dirac_delta_terms = dirac_delta(vector, vector.t())
-    dirac_delta_terms = torch.triu(dirac_delta_terms)
-    energy_matrix = torch.mul(dirac_delta_terms, interactions)
-
-    return torch.sum(energy_matrix)
+#def forward(vector, interactions):
+#    if (len(vector.size()) == 1):
+#        vector = vector.unsqueeze(1)
+#    dirac_delta_terms = dirac_delta(vector, vector.t())
+#    dirac_delta_terms = torch.triu(dirac_delta_terms)
+#    energy_matrix = torch.mul(dirac_delta_terms, interactions)
+#
+#    return torch.sum(energy_matrix)
 
 class AttnBlock(nn.Module):
     def __init__(self, in_channels):
