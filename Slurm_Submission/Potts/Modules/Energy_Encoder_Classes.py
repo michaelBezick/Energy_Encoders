@@ -197,6 +197,7 @@ class BVAE(pl.LightningModule):
         return 1
     def on_train_start(self):
         self.energy_fn = self.energy_fn.to(self.device)
+        self.energy_fn.interactions = self.energy_fn.interactions.to(self.device)
         self.scale = self.scale.to(self.device)
 
 class CorrelationalLoss():
