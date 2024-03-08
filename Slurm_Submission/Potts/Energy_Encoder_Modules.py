@@ -13,7 +13,7 @@ class Potts_Energy_Fn(nn.Module):
 
     def forward(self, vector):
         vector = vector.unsqueeze(1)
-        dirac_delta_terms = dirac_delta(vector, torch.transpose(vector, 1, 2))
+        dirac_delta_terms = self.dirac_delta(vector, torch.transpose(vector, 1, 2))
         dirac_delta_terms = torch.triu(dirac_delta_terms)
         energy_matrix = torch.mul(dirac_delta_terms, self.interactions)
         energy_matrix = energy_matrix.view(100, -1)
