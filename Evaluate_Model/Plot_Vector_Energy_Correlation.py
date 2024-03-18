@@ -3,9 +3,9 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from Modules.Energy_Encoder_Classes import Model_Type, CorrelationalLoss
-from Functions import get_folder_path_from_model_path, get_list_of_models, get_title_from_model_path, \
+from Functions import get_folder_path_from_model_path, get_list_of_models, get_model_name_and_type, get_title_from_model_path, \
                         load_dataset, get_energy_fn, load_energy_functions, BVAE, \
-                        get_sampling_vars, scale_vector_copy_gradient
+                        get_sampling_vars, load_from_checkpoint, scale_vector_copy_gradient
 import torch
 from tqdm import tqdm
 
@@ -29,26 +29,14 @@ energy_loss_fn = CorrelationalLoss()
 
 for model_dir in tqdm(models_list):
 
-    model_name = model_dir.split('/')[2]
-    "Need to fix this later"
-    if model_name == "Blume-Capel":
-        continue
-        model_type = Model_Type.BLUME_CAPEL
-    elif model_name == "Potts":
-        model_type = Model_Type.POTTS
-    else:
-        model_type = Model_Type.QUBO
+    model_name, model_type = get_model_name_and_type(model_dir)
 
     print(model_dir)
 
     energy_fn = get_energy_fn(model_name, energy_fn_list)
 
     model = BVAE(energy_fn, energy_loss_fn, h_dim = 128, model_type=model_type)
-    checkpoint = torch.load(model_dir)
-    model.load_state_dict(checkpoint['state_dict'])
-
-    model = model.to(device)
-    print(model.model_type)
+    model = load_from_checkpoint(model, model_dir)
 
     num_logits, scale = get_sampling_vars(model)
 

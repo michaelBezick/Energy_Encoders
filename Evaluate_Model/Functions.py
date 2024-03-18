@@ -10,8 +10,26 @@ import os
 import argparse
 import tensorflow as tf
 import polytensor
-from enum import Enum
-from Modules.Energy_Encoder_Classes import BVAE
+from Modules.Energy_Encoder_Classes import BVAE, Model_Type
+
+def get_model_name_and_type(model_dir):
+    model_name = model_dir.split('/')[2]
+    "Need to fix this later"
+    if model_name == "Blume-Capel":
+        model_type = Model_Type.BLUME_CAPEL
+    elif model_name == "Potts":
+        model_type = Model_Type.POTTS
+    else:
+        model_type = Model_Type.QUBO
+
+    return model_name, model_type
+
+
+def load_from_checkpoint(model, model_dir):
+    checkpoint = torch.load(model_dir)
+    model.load_state_dict(checkpoint['state_dict'])
+
+    return model
 
 def scale_vector_copy_gradient(x, probabilities, scale):
     '''
@@ -20,13 +38,6 @@ def scale_vector_copy_gradient(x, probabilities, scale):
     x = F.one_hot(x)
     copied_grad = (x - probabilities).detach() + probabilities
     return torch.einsum("ijk,k->ij", copied_grad, scale)
-
-class Model_Type(Enum):
-    QUBO = 1
-    PUBO = 2
-    ISING = 3
-    BLUME_CAPEL = 4
-    POTTS = 5
 
 def blume_capel_scale(x):
     return x - 1
