@@ -10,7 +10,7 @@ import pytorch_lightning as pl
 
 num_MCMC_iterations = 1
 temperature = 0.1
-resume_from_checkpoint = True
+resume_from_checkpoint = False
 num_devices = 2
 num_nodes = 2
 num_workers = 1
