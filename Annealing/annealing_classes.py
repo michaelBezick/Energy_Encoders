@@ -57,13 +57,13 @@ def convert_to_text(matrix: torch.Tensor, n):
 class Variational_Free_Energy(nn.Module): 
     def __init__(self, energy_fn, N_samples, batch_size=100):
         super().__init__()
-        self.energy_fn = energy_fn
+        self.energy_fn = energy_fn.to('cuda')
         self.batch_size = batch_size
         self.N_samples = N_samples
         self.epsilon = 1e-10
 
     def forward(self, sigma_hat_prob: torch.Tensor, temperature):
-        energy: torch.Tensor = torch.tensor(0)
+        energy: torch.Tensor = torch.zeros(self.batch_size, device = 'cuda')
         for _ in range(self.N_samples):
             if torch.any(sigma_hat_prob < 0):
                 raise Exception(f"Outside bounds negative {sigma_hat_prob}")
@@ -71,7 +71,7 @@ class Variational_Free_Energy(nn.Module):
                 raise Exception(f"Outside bounds positive {sigma_hat_prob}")
             sampled = torch.bernoulli(sigma_hat_prob)
             sampled_with_gradient = (sampled - sigma_hat_prob.detach()) + sigma_hat_prob
-            energy += self.energy_fn(sampled_with_gradient)
+            energy += torch.squeeze(self.energy_fn(sampled_with_gradient))
             complemented_probabilities = torch.where(sampled == 0, 1 - sigma_hat_prob, sigma_hat_prob)
             energy += temperature * torch.log(torch.prod(complemented_probabilities, dim=1) + self.epsilon)
 

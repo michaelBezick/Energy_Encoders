@@ -8,7 +8,7 @@ device = 'cuda'
 epochs = 1000
 lr = 5e-4
 batch_size = 100
-warmup_steps = 100
+warmup_steps = 0
 temperature = 1
 N_gradient_descent = 1
 N_samples = 50
@@ -22,10 +22,16 @@ save_vectors = True
 
 #experiment with normalizing energy functions
 Blume_Capel_energy, Potts_energy, QUBO_energy = load_energy_functions(device) #loads from Evaluate Model
-energy_fn_list = [QUBO_energy, Potts_energy, Blume_Capel_energy]
+energy_fn_list = [Blume_Capel_energy, Potts_energy, QUBO_energy]
 
 for experiment_number, energy_fn in enumerate(energy_fn_list):
+    if experiment_number == 0:
+        continue
+    elif experiment_number == 1:
+        continue
+    energy_fn = energy_fn.to(device)
     energy_loss = Variational_Free_Energy(energy_fn, N_samples = N_samples, batch_size = batch_size)
+    energy_loss = energy_loss.to(device)
     rnn = RNN_Concat().to(device)
 
     optimizer = torch.optim.Adam(params = rnn.parameters(), lr = lr)
@@ -136,6 +142,8 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
         total_steps = epoch + warmup_steps
         steps = list(range(0, total_steps, log_step_size))
 
+        plt.figure()
+
         plt.plot(steps, average_energies, label="Average Variational Classical Annealing Solution Energy", marker='o', linestyle='-')
         plt.xlabel('Transition Steps')
         plt.ylabel('Average Energy')
@@ -145,5 +153,3 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
         plt.legend()
 
         plt.savefig(save_dir + "Average_Energy_Plot.png")
-
-        plt.show()
