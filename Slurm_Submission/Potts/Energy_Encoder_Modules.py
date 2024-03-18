@@ -4,9 +4,10 @@ import torchvision
 from torchvision.models import VGG16_Weights
 
 class Potts_Energy_Fn(nn.Module):
-    def __init__(self, interactions):
+    def __init__(self, interactions, batch_size):
         super().__init__()
         self.interactions = interactions
+        #self.batch_size = batch_size
 
     def dirac_delta(self, x, y):
         return (1 - x) * (1 - y) + (x * y)
