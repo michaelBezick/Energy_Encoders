@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from Energy_Functions.Functions import get_folder_path_from_model_path, get_list_of_models, get_title_from_model_path, load_dataset, get_energy_fn
+from Functions import get_folder_path_from_model_path, get_list_of_models, get_title_from_model_path, load_dataset, get_energy_fn
 import torch
 
 """
@@ -14,9 +14,9 @@ device = "cuda"
 
 models_list = get_list_of_models()
 
-QUBO_energy = torch.load("./Energy_Functions/QUBO_energy_fn")
-Potts_energy = torch.load("./Energy_Functions/Potts_energy_fn")
-Blume_Capel_energy = torch.load("./Energy_Functions/Blume-Capel_energy_fn")
+QUBO_energy = torch.load("./Energy_Functions/QUBO_energy_fn.pt")
+Potts_energy = torch.load("./Energy_Functions/Potts_energy_fn.pt")
+Blume_Capel_energy = torch.load("./Energy_Functions/Blume-Capel_energy_fn.pt")
 
 energy_fn_list = [QUBO_energy, Potts_energy, Blume_Capel_energy]
 
