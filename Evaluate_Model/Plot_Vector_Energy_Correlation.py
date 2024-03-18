@@ -30,6 +30,7 @@ energy_loss_fn = CorrelationalLoss()
 for model_dir in tqdm(models_list):
 
     model_name = model_dir.split('/')[2]
+    "Need to fix this later"
     if model_name == "Blume-Capel":
         continue
         model_type = Model_Type.BLUME_CAPEL
