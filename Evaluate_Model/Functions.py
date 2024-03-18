@@ -1,9 +1,72 @@
 import torch
+import pytorch_lightning as pl
+import torchvision
+import torch.optim
+import torch.nn as nn
 from torch.utils.data import Dataset
 import numpy as np
 import os
 import argparse
 import tensorflow as tf
+import polytensor
+from enum import Enum
+from Modules.Energy_Encoder_Classes import BVAE
+
+class Model_Type(Enum):
+    QUBO = 1
+    PUBO = 2
+    ISING = 3
+    BLUME_CAPEL = 4
+    POTTS = 5
+
+def blume_capel_scale(x):
+    return x - 1
+def ising_scale(x):
+    return 2 * x - 1
+def no_scale(x):
+    return x
+
+class Potts_Energy_Fn(nn.Module):
+    def __init__(self, interactions, batch_size = 100):
+        super().__init__()
+        self.interactions = interactions
+        self.batch_size = batch_size
+
+    def dirac_delta(self, x, y):
+        return (1 - x) * (1 - y) + (x * y)
+
+    def forward(self, vector):
+        vector = vector.unsqueeze(1)
+        dirac_delta_terms = self.dirac_delta(vector, torch.transpose(vector, 1, 2))
+        dirac_delta_terms = torch.triu(dirac_delta_terms)
+        energy_matrix = torch.mul(dirac_delta_terms, self.interactions)
+        energy_matrix = energy_matrix.view(self.batch_size, -1)
+
+        return torch.sum(energy_matrix, dim = 1)
+
+def load_energy_functions(device):
+    num_vars = 64
+
+    num_per_degree = [num_vars, num_vars * (num_vars - 1) // 2]
+    sample_fn = lambda: torch.randn(1, device='cuda')
+    terms = polytensor.generators.coeffPUBORandomSampler(
+            n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
+            )
+    terms = polytensor.generators.denseFromSparse(terms, num_vars)
+
+    Blume_Capel_model = polytensor.DensePolynomial(terms)
+    QUBO_model = polytensor.DensePolynomial(terms)
+
+    Blume_Capel_coeff = torch.load("./Energy_Functions/Blume-Capel_energy_fn_coefficients.pt")
+    Potts_coeff = torch.load("./Energy_Functions/Potts_energy_fn_coefficients.pt")
+    QUBO_coeff = torch.load("./Energy_Functions/QUBO_energy_fn_coefficients.pt")
+
+    Blume_Capel_model.coefficients = Blume_Capel_coeff
+    Potts_model = Potts_Energy_Fn(Potts_coeff)
+    QUBO_model.coefficients = QUBO_coeff
+
+    return Blume_Capel_model, Potts_model, QUBO_model
+
 
 def expand_output(tensor: torch.Tensor):
     x = torch.zeros([100, 1, 64, 64])
@@ -69,7 +132,7 @@ def load_dataset(path):
 
     dataset = torch.from_numpy(normalizedDataset)
 
-    labels = torch.from_numpy(np.squeeze(np.load('FOM_labels.npy')))
+    labels = torch.from_numpy(np.squeeze(np.load('../Files/FOM_labels.npy')))
 
     labeled_dataset = LabeledDataset(dataset, labels)
     return labeled_dataset
