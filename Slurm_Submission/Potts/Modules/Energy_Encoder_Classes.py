@@ -33,22 +33,18 @@ class BVAE(pl.LightningModule):
             self.model_type = 'QUBO'
             num_logits = 2
             self.scale = torch.Tensor([0., 1.])
-            self.shift = 0.
         elif model_type == Model_Type.PUBO:
             self.model_type = 'PUBO'
             num_logits = 2
             self.scale = torch.Tensor([0., 1.])
-            self.shift = 0.
         elif model_type == Model_Type.BLUME_CAPEL:
             self.model_type = 'Blume-Capel'
             num_logits = 3
             self.scale = torch.Tensor([-1., 0., 1.])
-            self.shift = 1.
         elif model_type == Model_Type.POTTS:
             self.model_type = 'Potts'
             num_logits = 2
             self.scale = torch.Tensor([0., 1.])
-            self.shift = 0
         else:
             raise ValueError("Model does not exist!")
 
@@ -140,10 +136,8 @@ class BVAE(pl.LightningModule):
         for _ in range(self.num_MCMC_iterations):
             transitioned_vectors = self.MCMC_step(transitioned_vectors)
 
-        shifted_vector = transitioned_vectors + self.shift
-
         """"""
-        transitioned_vectors_with_gradient = self.scale_vector_copy_gradient(shifted_vector.long(), probabilities)
+        transitioned_vectors_with_gradient = self.scale_vector_copy_gradient(transitioned_vectors.long(), probabilities)
         """"""
 
         x_hat = self.vae.decode(transitioned_vectors_with_gradient)

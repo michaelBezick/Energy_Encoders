@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 import pytorch_lightning as pl
 import torchvision
 import torch.optim
@@ -11,6 +12,14 @@ import tensorflow as tf
 import polytensor
 from enum import Enum
 from Modules.Energy_Encoder_Classes import BVAE
+
+def scale_vector_copy_gradient(x, probabilities, scale):
+    '''
+    x in index format -> x in scaled format with gradient
+    '''
+    x = F.one_hot(x)
+    copied_grad = (x - probabilities).detach() + probabilities
+    return torch.einsum("ijk,k->ij", copied_grad, scale)
 
 class Model_Type(Enum):
     QUBO = 1
@@ -25,6 +34,24 @@ def ising_scale(x):
     return 2 * x - 1
 def no_scale(x):
     return x
+
+def get_sampling_vars(model):
+    if model.model_type == "QUBO":
+        num_logits = 2
+        scale = torch.Tensor([0., 1.])
+    elif model.model_type == 'PUBO':
+        num_logits = 2
+        scale = torch.Tensor([0., 1.])
+    elif model.model_type == 'Blume-Capel':
+        num_logits = 3
+        scale = torch.Tensor([-1., 0., 1.])
+    elif model.model_type == 'Potts':
+        num_logits = 2
+        scale = torch.Tensor([0., 1.])
+    else:
+        raise ValueError("Model does not exist!")
+
+    return num_logits, scale
 
 class Potts_Energy_Fn(nn.Module):
     def __init__(self, interactions, batch_size = 100):
@@ -57,9 +84,9 @@ def load_energy_functions(device):
     Blume_Capel_model = polytensor.DensePolynomial(terms)
     QUBO_model = polytensor.DensePolynomial(terms)
 
-    Blume_Capel_coeff = torch.load("./Energy_Functions/Blume-Capel_energy_fn_coefficients.pt")
-    Potts_coeff = torch.load("./Energy_Functions/Potts_energy_fn_coefficients.pt")
-    QUBO_coeff = torch.load("./Energy_Functions/QUBO_energy_fn_coefficients.pt")
+    Blume_Capel_coeff = torch.load("./Energy_Functions/Blume-Capel_energy_fn_coefficients.pt").to(device)
+    Potts_coeff = torch.load("./Energy_Functions/Potts_energy_fn_coefficients.pt").to(device)
+    QUBO_coeff = torch.load("./Energy_Functions/QUBO_energy_fn_coefficients.pt").to(device)
 
     Blume_Capel_model.coefficients = Blume_Capel_coeff
     Potts_model = Potts_Energy_Fn(Potts_coeff)
@@ -159,15 +186,15 @@ def get_title_from_model_path(model_path):
     plot_title = model_path.split("/")[3]
     return plot_title
 
-def get_energy_fn(model, energy_fn_list):
+def get_energy_fn(model_name, energy_fn_list):
 
     QUBO_energy = energy_fn_list[0]
     Potts_energy = energy_fn_list[1]
     Blume_Capel_energy = energy_fn_list[2]
 
-    if model.model_type == 'QUBO':
+    if model_name == 'QUBO':
         energy_fn = QUBO_energy
-    elif model.model_type == 'Potts':
+    elif model_name == 'Potts':
         energy_fn = Potts_energy
     else:
         energy_fn = Blume_Capel_energy
