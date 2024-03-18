@@ -25,7 +25,7 @@ energy_fn_list = [QUBO_energy, Potts_energy, Blume_Capel_energy]
 
 energy_loss_fn = CorrelationalLoss()
 
-FOM_calculator = load_FOM_model("VGGnet.json", "VGGnet_weights.h5")
+FOM_calculator = load_FOM_model("../Files/VGGnet.json", "../Files/VGGnet_weights.h5")
 
 models_list = get_list_of_models()
 
