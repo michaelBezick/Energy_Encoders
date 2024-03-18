@@ -21,7 +21,7 @@ plot = True
 save_vectors = True
 
 #experiment with normalizing energy functions
-Blume_Capel_energy, Potts_energy, QUBO_energy = load_energy_functions(device)
+Blume_Capel_energy, Potts_energy, QUBO_energy = load_energy_functions(device) #loads from Evaluate Model
 energy_fn_list = [QUBO_energy, Potts_energy, Blume_Capel_energy]
 
 for experiment_number, energy_fn in enumerate(energy_fn_list):
