@@ -29,6 +29,7 @@ class BVAE(pl.LightningModule):
         super().__init__()
 
         self.sampler = torch.multinomial
+        self.shift = 0 #dilation to go back to index format
         if model_type == Model_Type.QUBO:
             self.model_type = 'QUBO'
             num_logits = 2
@@ -41,6 +42,7 @@ class BVAE(pl.LightningModule):
             self.model_type = 'Blume-Capel'
             num_logits = 3
             self.scale = torch.Tensor([-1., 0., 1.])
+            self.shift = 1
         elif model_type == Model_Type.POTTS:
             self.model_type = 'Potts'
             num_logits = 2
@@ -81,6 +83,7 @@ class BVAE(pl.LightningModule):
         #get new spins corresponding to indices
         new_spins = torch.randint(0, self.num_logits, (self.batch_size, 1), device=self.device)
         new_spins = F.one_hot(new_spins, self.num_logits).float()
+        #new spins will be correctly scaled
         new_spins = torch.einsum("ijk,k->ij", new_spins, self.scale)
 
         transitioned_vectors = initial_vectors.scatter(dim=1, index=indices, src=new_spins)
@@ -135,6 +138,8 @@ class BVAE(pl.LightningModule):
         for _ in range(self.num_MCMC_iterations):
             transitioned_vectors = self.MCMC_step(transitioned_vectors)
 
+        #need to scale back to index format. Currently in {-1, 0, 1}
+        transitioned_vectors = self.shift + transitioned_vectors
         """"""
         transitioned_vectors_with_gradient = self.scale_vector_copy_gradient(transitioned_vectors.long(), probabilities)
         """"""
