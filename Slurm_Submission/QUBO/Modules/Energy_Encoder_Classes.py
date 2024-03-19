@@ -29,6 +29,7 @@ class BVAE(pl.LightningModule):
         super().__init__()
 
         self.sampler = torch.multinomial
+        self.shift = 0
         if model_type == Model_Type.QUBO:
             self.model_type = 'QUBO'
             num_logits = 2
@@ -41,6 +42,7 @@ class BVAE(pl.LightningModule):
             self.model_type = 'Blume-Capel'
             num_logits = 3
             self.scale = torch.Tensor([-1., 0., 1.])
+            self.shift = 1
         elif model_type == Model_Type.POTTS:
             self.model_type = 'Potts'
             num_logits = 2
@@ -134,6 +136,10 @@ class BVAE(pl.LightningModule):
         transitioned_vectors = valid_vector.detach()
         for _ in range(self.num_MCMC_iterations):
             transitioned_vectors = self.MCMC_step(transitioned_vectors)
+
+        #need to shift back to index form
+
+        transitioned_vectors = transitioned_vectors + self.shift
 
         """"""
         transitioned_vectors_with_gradient = self.scale_vector_copy_gradient(transitioned_vectors.long(), probabilities)
