@@ -29,10 +29,6 @@ Blume_Capel_energy, Potts_energy, QUBO_energy = load_energy_functions(
 energy_fn_list = [Blume_Capel_energy, Potts_energy, QUBO_energy]
 
 for experiment_number, energy_fn in enumerate(energy_fn_list):
-    if experiment_number == 0:
-        continue
-    elif experiment_number == 1:
-        continue
     energy_fn = energy_fn.to(device)
     energy_loss = Variational_Free_Energy(
         energy_fn, N_samples=N_samples, batch_size=batch_size
