@@ -1,8 +1,12 @@
+import pdb
+
 import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+
+# pdb.set_trace()
 
 from Functions import (
     BVAE,
@@ -28,6 +32,7 @@ batch_size = 100
 latent_vector_dim = 64
 device = "cuda"
 
+# breakpoint()
 models_list = get_list_of_models()
 
 Blume_Capel_energy, Potts_energy, QUBO_energy = load_energy_functions(device)
@@ -60,6 +65,7 @@ for model_dir in tqdm(models_list):
     energies = []
 
     model = model.eval()
+    model = model.to(device)
     with torch.no_grad():
         for data in train_loader:
             x, FOM = data

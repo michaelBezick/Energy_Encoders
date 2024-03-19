@@ -202,6 +202,24 @@ def load_dataset(path):
     return labeled_dataset
 
 
+# def get_list_of_models():
+#     path_list = os.listdir("./Models/")
+#     models_list = []
+#     for path in path_list:
+#         path = "./Models/" + path + "/"
+#         model_list = os.listdir(path)
+#         for model_path in model_list:
+#             model_path = (
+#                 path + model_path
+#             )  # currently have the folder name, which is a unique ID for the model
+#             model_path = (
+#                 model_path + "/" + os.listdir(model_path)[0]
+#             )  # getting the unique checkpoint to each model
+#             models_list.append(model_path)
+#
+#     return models_list
+
+
 def get_list_of_models():
     path_list = os.listdir("./Models/")
     models_list = []
@@ -209,12 +227,22 @@ def get_list_of_models():
         path = "./Models/" + path + "/"
         model_list = os.listdir(path)
         for model_path in model_list:
-            model_path = (
-                path + model_path
-            )  # currently have the folder name, which is a unique ID for the model
-            model_path = (
-                model_path + "/" + os.listdir(model_path)[0]
-            )  # getting the unique checkpoint to each model
+            if "old_files" in model_path:
+                continue
+            model_path = path + model_path
+
+            # need this because checkpoint file is not sole file
+            files = os.listdir(model_path)
+            print(files)
+            checkpoint_path = ""
+            for potential_checkpoint in files:
+                if ".ckpt" in potential_checkpoint:
+                    checkpoint_path = potential_checkpoint
+                    break
+
+            model_path = model_path + "/" + checkpoint_path
+            print(model_path)
+
             models_list.append(model_path)
 
     return models_list

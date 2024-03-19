@@ -1,15 +1,16 @@
-import torch
-import torch.nn.functional as F
-import pytorch_lightning as pl
-import torchvision
-import torch.optim
-import torch.nn as nn
-from torch.utils.data import Dataset
-import numpy as np
-import os
 import argparse
-import tensorflow as tf
+import os
+
+import numpy as np
 import polytensor
+import pytorch_lightning as pl
+import tensorflow as tf
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim
+import torchvision
+from torch.utils.data import Dataset
 
 
 def load_from_checkpoint(model, model_dir):
@@ -193,12 +194,17 @@ def get_list_of_models():
         path = "./Models/" + path + "/"
         model_list = os.listdir(path)
         for model_path in model_list:
-            model_path = (
-                path + model_path
-            )  # currently have the folder name, which is a unique ID for the model
-            model_path = (
-                model_path + "/" + os.listdir(model_path)[0]
-            )  # getting the unique checkpoint to each model
+            model_path = path + model_path
+
+            # need this because checkpoint file is not sole file
+            files = os.listdir(model_path)
+            checkpoint_path = ""
+            for potential_checkpoint in files:
+                if ".ckpt" in potential_checkpoint:
+                    checkpoint_path = potential_checkpoint
+
+            model_path = model_path + "/" + checkpoint_path
+
             models_list.append(model_path)
 
     return models_list
