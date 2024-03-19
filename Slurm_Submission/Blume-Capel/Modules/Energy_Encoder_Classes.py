@@ -142,14 +142,9 @@ class BVAE(pl.LightningModule):
         for _ in range(self.num_MCMC_iterations):
             transitioned_vectors = self.MCMC_step(transitioned_vectors)
 
-<<<<<<< HEAD
         #need to scale back to index format. Currently in {-1, 0, 1}
         transitioned_vectors = self.shift + transitioned_vectors
-=======
-        #need to shift back to index form
-        transitioned_vectors = transitioned_vectors + self.shift
 
->>>>>>> 828b17b852dab84328989fba4104dfb6fa4df237
         """"""
         transitioned_vectors_with_gradient = self.scale_vector_copy_gradient(transitioned_vectors.long(), probabilities)
         """"""
