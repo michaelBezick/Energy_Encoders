@@ -10,7 +10,7 @@ import pytorch_lightning as pl
 
 num_MCMC_iterations = 1
 temperature = 0.1
-resume_from_checkpoint = False
+resume_from_checkpoint = True
 num_devices = 2
 num_nodes = 2
 num_workers = 1
@@ -25,7 +25,7 @@ model_type = Model_Type.BLUME_CAPEL
 
 ###############################################################
 
-energy_fn = torch.load("Blume-Capel_energy_fn.pt")
+energy_fn = torch.load("./Blume-Capel_energy_fn.pt")
 
 energy_loss_fn = CorrelationalLoss(10., 0.01, 0.)
 
