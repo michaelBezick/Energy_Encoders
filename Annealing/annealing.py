@@ -1,10 +1,12 @@
-import torch
 import time
+
 import matplotlib.pyplot as plt
+import torch
+
 from annealing_classes import RNN_Concat, Variational_Free_Energy
 from annealing_functions import load_energy_functions
 
-device = 'cuda'
+device = "cuda"
 epochs = 1000
 lr = 5e-4
 batch_size = 100
@@ -20,8 +22,10 @@ print_vector = False
 plot = True
 save_vectors = True
 
-#experiment with normalizing energy functions
-Blume_Capel_energy, Potts_energy, QUBO_energy = load_energy_functions(device) #loads from Evaluate Model
+# experiment with normalizing energy functions
+Blume_Capel_energy, Potts_energy, QUBO_energy = load_energy_functions(
+    device
+)  # loads from Evaluate Model
 energy_fn_list = [Blume_Capel_energy, Potts_energy, QUBO_energy]
 
 for experiment_number, energy_fn in enumerate(energy_fn_list):
@@ -30,13 +34,17 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
     elif experiment_number == 1:
         continue
     energy_fn = energy_fn.to(device)
-    energy_loss = Variational_Free_Energy(energy_fn, N_samples = N_samples, batch_size = batch_size)
+    energy_loss = Variational_Free_Energy(
+        energy_fn, N_samples=N_samples, batch_size=batch_size
+    )
     energy_loss = energy_loss.to(device)
     rnn = RNN_Concat().to(device)
 
-    optimizer = torch.optim.Adam(params = rnn.parameters(), lr = lr)
+    optimizer = torch.optim.Adam(params=rnn.parameters(), lr=lr)
 
-    initial_vector = torch.bernoulli(torch.ones(batch_size, vector_length) * 0.5).to(device)
+    initial_vector = torch.bernoulli(torch.ones(batch_size, vector_length) * 0.5).to(
+        device
+    )
     sigma = initial_vector
 
     average_energies = []
@@ -50,8 +58,8 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
     unique_vector_list = []
     unique_vector_set = set()
 
-    #sigma is sampled
-    #sigma_hat is probabililties
+    # sigma is sampled
+    # sigma_hat is probabililties
     for i in range(warmup_steps):
         sigma_hat = rnn(sigma)
 
@@ -67,7 +75,7 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
         loss.backward()
         optimizer.step()
 
-        #move to next state after n gradient descent steps
+        # move to next state after n gradient descent steps
         if i % N_gradient_descent == 0:
             sigma = torch.bernoulli(sigma_hat)
 
@@ -81,7 +89,7 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
 
         loss = energy_loss(sigma_hat, temperature)
 
-        #adding vectors to unique vector set
+        # adding vectors to unique vector set
         list_of_vectors = torch.bernoulli(sigma).tolist()
         for vector in list_of_vectors:
             vector_tuple = tuple(vector)
@@ -89,7 +97,7 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
                 unique_vector_set.add(vector_tuple)
                 unique_vector_list.append(vector)
 
-        #finding min energy, with consideration of repeats
+        # finding min energy, with consideration of repeats
         min_energy_repeats += 1
 
         if torch.min(energy_fn(sigma)) < min_energy:
@@ -105,16 +113,15 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
             print(f"Epoch: {epoch}")
             print(f"Min Energy: {min_energy}")
             print(f"Loss: {loss}")
-            if (print_vector):
+            if print_vector:
                 print(f"{best_vector}")
             average_energies.append(torch.mean(energy_fn(sigma)).item())
             temperatures.append(temperature)
 
-
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-            
+
         if epoch % N_gradient_descent == 0:
             sigma = torch.bernoulli(sigma_hat)
 
@@ -130,12 +137,11 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
     else:
         save_dir = "./QUBO/"
 
-
     print(f"Elapsed time: {elapsed_time}")
     print(f"Time per epoch: {time_per_epoch}")
     sigma = torch.tensor(unique_vector_list)
     print(sigma.size())
-    if (save_vectors):
+    if save_vectors:
         torch.save(sigma, save_dir + "neural_annealing_vectors.pt")
 
     if plot:
@@ -144,11 +150,17 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
 
         plt.figure()
 
-        plt.plot(steps, average_energies, label="Average Variational Classical Annealing Solution Energy", marker='o', linestyle='-')
-        plt.xlabel('Transition Steps')
-        plt.ylabel('Average Energy')
-        #plt.axhline(y=-391, color='r', label='Simulated Annealing Min Solution')
-        plt.title('Average Energy of Solutions versus Transition Steps')
+        plt.plot(
+            steps,
+            average_energies,
+            label="Average Variational Classical Annealing Solution Energy",
+            marker="o",
+            linestyle="-",
+        )
+        plt.xlabel("Transition Steps")
+        plt.ylabel("Average Energy")
+        # plt.axhline(y=-391, color='r', label='Simulated Annealing Min Solution')
+        plt.title("Average Energy of Solutions versus Transition Steps")
 
         plt.legend()
 

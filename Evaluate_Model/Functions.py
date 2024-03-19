@@ -1,19 +1,22 @@
-import torch
-import torch.nn.functional as F
-import pytorch_lightning as pl
-import torchvision
-import torch.optim
-import torch.nn as nn
-from torch.utils.data import Dataset
-import numpy as np
-import os
 import argparse
-import tensorflow as tf
+import os
+
+import numpy as np
 import polytensor
+import pytorch_lightning as pl
+import tensorflow as tf
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim
+import torchvision
+from torch.utils.data import Dataset
+
 from Modules.Energy_Encoder_Classes import BVAE, Model_Type
 
+
 def get_model_name_and_type(model_dir):
-    model_name = model_dir.split('/')[2]
+    model_name = model_dir.split("/")[2]
     "Need to fix this later"
     if model_name == "Blume-Capel":
         model_type = Model_Type.BLUME_CAPEL
@@ -27,45 +30,53 @@ def get_model_name_and_type(model_dir):
 
 def load_from_checkpoint(model, model_dir):
     checkpoint = torch.load(model_dir)
-    model.load_state_dict(checkpoint['state_dict'])
+    model.load_state_dict(checkpoint["state_dict"])
 
     return model
 
+
 def scale_vector_copy_gradient(x, probabilities, scale):
-    '''
+    """
     x in index format -> x in scaled format with gradient
-    '''
+    """
     x = F.one_hot(x)
     copied_grad = (x - probabilities).detach() + probabilities
     return torch.einsum("ijk,k->ij", copied_grad, scale)
 
+
 def blume_capel_scale(x):
     return x - 1
+
+
 def ising_scale(x):
     return 2 * x - 1
+
+
 def no_scale(x):
     return x
+
 
 def get_sampling_vars(model):
     if model.model_type == "QUBO":
         num_logits = 2
-        scale = torch.Tensor([0., 1.])
-    elif model.model_type == 'PUBO':
+        scale = torch.Tensor([0.0, 1.0])
+    elif model.model_type == "PUBO":
         num_logits = 2
-        scale = torch.Tensor([0., 1.])
-    elif model.model_type == 'Blume-Capel':
+        scale = torch.Tensor([0.0, 1.0])
+    elif model.model_type == "Blume-Capel":
         num_logits = 3
-        scale = torch.Tensor([-1., 0., 1.])
-    elif model.model_type == 'Potts':
+        scale = torch.Tensor([-1.0, 0.0, 1.0])
+    elif model.model_type == "Potts":
         num_logits = 2
-        scale = torch.Tensor([0., 1.])
+        scale = torch.Tensor([0.0, 1.0])
     else:
         raise ValueError("Model does not exist!")
 
     return num_logits, scale
 
+
 class Potts_Energy_Fn(nn.Module):
-    def __init__(self, interactions, batch_size = 100):
+    def __init__(self, interactions, batch_size=100):
         super().__init__()
         self.interactions = interactions
         self.batch_size = batch_size
@@ -80,24 +91,31 @@ class Potts_Energy_Fn(nn.Module):
         energy_matrix = torch.mul(dirac_delta_terms, self.interactions)
         energy_matrix = energy_matrix.view(self.batch_size, -1)
 
-        return torch.sum(energy_matrix, dim = 1)
+        return torch.sum(energy_matrix, dim=1)
+
 
 def load_energy_functions(device):
     num_vars = 64
 
     num_per_degree = [num_vars, num_vars * (num_vars - 1) // 2]
-    sample_fn = lambda: torch.randn(1, device='cuda')
+    sample_fn = lambda: torch.randn(1, device="cuda")
     terms = polytensor.generators.coeffPUBORandomSampler(
-            n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
-            )
+        n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
+    )
     terms = polytensor.generators.denseFromSparse(terms, num_vars)
 
     Blume_Capel_model = polytensor.DensePolynomial(terms)
     QUBO_model = polytensor.DensePolynomial(terms)
 
-    Blume_Capel_coeff = torch.load("./Energy_Functions/Blume-Capel_energy_fn_coefficients.pt").to(device)
-    Potts_coeff = torch.load("./Energy_Functions/Potts_energy_fn_coefficients.pt").to(device)
-    QUBO_coeff = torch.load("./Energy_Functions/QUBO_energy_fn_coefficients.pt").to(device)
+    Blume_Capel_coeff = torch.load(
+        "./Energy_Functions/Blume-Capel_energy_fn_coefficients.pt"
+    ).to(device)
+    Potts_coeff = torch.load("./Energy_Functions/Potts_energy_fn_coefficients.pt").to(
+        device
+    )
+    QUBO_coeff = torch.load("./Energy_Functions/QUBO_energy_fn_coefficients.pt").to(
+        device
+    )
 
     Blume_Capel_model.coefficients = Blume_Capel_coeff
     Potts_model = Potts_Energy_Fn(Potts_coeff)
@@ -115,11 +133,13 @@ def expand_output(tensor: torch.Tensor):
 
     return x
 
+
 def clamp_output(tensor: torch.Tensor, threshold):
     return torch.where(tensor > threshold, torch.tensor(1.0), torch.tensor(0.0))
 
+
 def load_FOM_model(model_path, weights_path):
-    with open(model_path, 'r') as file:
+    with open(model_path, "r") as file:
         data = file.read()
 
     FOM_calculator = tf.keras.models.model_from_json(data)
@@ -127,9 +147,12 @@ def load_FOM_model(model_path, weights_path):
 
     return FOM_calculator
 
+
 def threshold():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--threshold", type=float, default=0., help="threshold to clamp values")
+    parser.add_argument(
+        "--threshold", type=float, default=0.0, help="threshold to clamp values"
+    )
 
     args = parser.parse_args()
     threshold = args.threshold
@@ -150,7 +173,7 @@ class LabeledDataset(Dataset):
 
     def __len__(self):
         return len(self.labels)
-    
+
     def __getitem__(self, idx):
         image = self.images[idx]
         label = self.labels[idx]
@@ -160,42 +183,53 @@ class LabeledDataset(Dataset):
 
         return image[:, 0:32, 0:32], label
 
+
 def load_dataset(path):
     dataset = np.expand_dims(np.load(path), 1)
-    normalizedDataset = (dataset - np.min(dataset)) / (np.max(dataset) - np.min(dataset))
-        
+    normalizedDataset = (dataset - np.min(dataset)) / (
+        np.max(dataset) - np.min(dataset)
+    )
+
     normalizedDataset = np.multiply(normalizedDataset, 2) - 1
 
     normalizedDataset = normalizedDataset.astype(np.float32)
 
     dataset = torch.from_numpy(normalizedDataset)
 
-    labels = torch.from_numpy(np.squeeze(np.load('../Files/FOM_labels.npy')))
+    labels = torch.from_numpy(np.squeeze(np.load("../Files/FOM_labels.npy")))
 
     labeled_dataset = LabeledDataset(dataset, labels)
     return labeled_dataset
 
+
 def get_list_of_models():
-    path_list = os.listdir("./Models/") 
+    path_list = os.listdir("./Models/")
     models_list = []
     for path in path_list:
         path = "./Models/" + path + "/"
         model_list = os.listdir(path)
         for model_path in model_list:
-            model_path = path + model_path #currently have the folder name, which is a unique ID for the model
-            model_path = model_path + "/" + os.listdir(model_path)[0] #getting the unique checkpoint to each model
+            model_path = (
+                path + model_path
+            )  # currently have the folder name, which is a unique ID for the model
+            model_path = (
+                model_path + "/" + os.listdir(model_path)[0]
+            )  # getting the unique checkpoint to each model
             models_list.append(model_path)
 
     return models_list
 
+
 def get_folder_path_from_model_path(model_path):
     model_dir_split = model_path.split("/")[:4]
-    model_folder_path = '/'.join([str(item) for item in model_dir_split]) + "/"
+    model_folder_path = "/".join([str(item) for item in model_dir_split]) + "/"
     return model_folder_path
+
 
 def get_title_from_model_path(model_path):
     plot_title = model_path.split("/")[3]
     return plot_title
+
 
 def get_energy_fn(model_name, energy_fn_list):
 
@@ -203,9 +237,9 @@ def get_energy_fn(model_name, energy_fn_list):
     Potts_energy = energy_fn_list[1]
     Blume_Capel_energy = energy_fn_list[2]
 
-    if model_name == 'QUBO':
+    if model_name == "QUBO":
         energy_fn = QUBO_energy
-    elif model_name == 'Potts':
+    elif model_name == "Potts":
         energy_fn = Potts_energy
     else:
         energy_fn = Blume_Capel_energy

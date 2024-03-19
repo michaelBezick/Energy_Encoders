@@ -1,14 +1,23 @@
+import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-import matplotlib.pyplot as plt
-from Modules.Energy_Encoder_Classes import Model_Type, CorrelationalLoss
-from Functions import get_folder_path_from_model_path, get_list_of_models, get_model_name_and_type, get_title_from_model_path, \
-                        load_dataset, get_energy_fn, load_energy_functions, BVAE, \
-                        get_sampling_vars, load_from_checkpoint, scale_vector_copy_gradient
-import torch
 from tqdm import tqdm
 
+from Functions import (
+    BVAE,
+    get_energy_fn,
+    get_folder_path_from_model_path,
+    get_list_of_models,
+    get_model_name_and_type,
+    get_sampling_vars,
+    get_title_from_model_path,
+    load_dataset,
+    load_energy_functions,
+    load_from_checkpoint,
+    scale_vector_copy_gradient,
+)
+from Modules.Energy_Encoder_Classes import CorrelationalLoss, Model_Type
 
 """
 Code requires that each model be stored as its own directory within ./Models as soley a .ckpt file.
@@ -35,15 +44,17 @@ for model_dir in tqdm(models_list):
 
     energy_fn = get_energy_fn(model_name, energy_fn_list)
 
-    model = BVAE(energy_fn, energy_loss_fn, h_dim = 128, model_type=model_type)
+    model = BVAE(energy_fn, energy_loss_fn, h_dim=128, model_type=model_type)
     model = load_from_checkpoint(model, model_dir)
 
     num_logits, scale = get_sampling_vars(model)
 
-    #need to plot FOM versus energy
+    # need to plot FOM versus energy
     dataset = load_dataset("../Files/top_0.npy")
 
-    train_loader = DataLoader(dataset, batch_size = batch_size, shuffle = False, drop_last = True)
+    train_loader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=False, drop_last=True
+    )
 
     FOMs = []
     energies = []
@@ -55,10 +66,14 @@ for model_dir in tqdm(models_list):
             x = x.to(device)
             scale = scale.to(device)
             logits = model.vae.encode(x)
-            probabilities = F.softmax(logits, dim = 2)
+            probabilities = F.softmax(logits, dim=2)
             probabilities_condensed = probabilities.view(-1, num_logits)
-            sampled_vector = torch.multinomial(probabilities_condensed, 1, True).view(batch_size, latent_vector_dim)
-            valid_vector = scale_vector_copy_gradient(sampled_vector, probabilities, scale)
+            sampled_vector = torch.multinomial(probabilities_condensed, 1, True).view(
+                batch_size, latent_vector_dim
+            )
+            valid_vector = scale_vector_copy_gradient(
+                sampled_vector, probabilities, scale
+            )
             energy = energy_fn(valid_vector)
 
             FOMs.extend(FOM.view(-1).detach().cpu().numpy())

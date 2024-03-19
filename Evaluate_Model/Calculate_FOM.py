@@ -1,19 +1,27 @@
+import pickle
+
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torchvision
-import pickle
 from torchvision.utils import save_image
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
-from Functions import load_from_checkpoint, threshold, load_FOM_model, expand_output, clamp_output
-import torch
-import matplotlib.pyplot as plt
-from Modules.Energy_Encoder_Classes import CorrelationalLoss
-from Functions import get_folder_path_from_model_path, get_list_of_models,\
-                        get_energy_fn, load_energy_functions, BVAE, \
-                        get_sampling_vars, get_model_name_and_type
-import torch
 from tqdm import tqdm
+
+from Functions import (
+    BVAE,
+    clamp_output,
+    expand_output,
+    get_energy_fn,
+    get_folder_path_from_model_path,
+    get_list_of_models,
+    get_model_name_and_type,
+    get_sampling_vars,
+    load_energy_functions,
+    load_FOM_model,
+    load_from_checkpoint,
+    threshold,
+)
+from Modules.Energy_Encoder_Classes import CorrelationalLoss
 
 device = "cuda"
 save_images = True
@@ -31,12 +39,12 @@ models_list = get_list_of_models()
 
 log_dir = ""
 
-#load QIOTE vectors
+# load QIOTE vectors
 optimal_vectors_list_qiote = None
 with open("optimal_vectors.pkl", "rb") as file:
     optimal_vector_list_qiote = pickle.load(file)
 
-#load Neural Annealing Vectors
+# load Neural Annealing Vectors
 optimal_vector_list_neural = torch.load("./neural_annealing_vectors.pt")
 print(optimal_vector_list_neural.size())
 
@@ -49,7 +57,7 @@ for optimal_vector_list in optimal_vectors:
     experiment_type = ""
 
     if num_experiment == 0:
-        experiment_type = "QIOTE" 
+        experiment_type = "QIOTE"
         num_iters = 10
         num_experiment += 1
         bias = 0
@@ -66,7 +74,9 @@ for optimal_vector_list in optimal_vectors:
 
         energy_fn = get_energy_fn(model_name, energy_fn_list)
 
-        model = BVAE(energy_fn, energy_loss_fn, h_dim = 128, model_type=model_type).to(device)
+        model = BVAE(energy_fn, energy_loss_fn, h_dim=128, model_type=model_type).to(
+            device
+        )
         model = load_from_checkpoint(model, model_dir)
         model = model.eval()
 
@@ -78,10 +88,10 @@ for optimal_vector_list in optimal_vectors:
 
         with torch.no_grad():
             for iters in range(num_iters):
-                zero_tensor = optimal_vector_list[iters * 100:(iters+1)*100]
+                zero_tensor = optimal_vector_list[iters * 100 : (iters + 1) * 100]
 
                 vectors = zero_tensor.cuda()
-                
+
                 vectors_energies = energy_fn(vectors)
                 numpy_energies = vectors_energies.detach().cpu().numpy()
                 energies.extend(numpy_energies)
@@ -92,12 +102,16 @@ for optimal_vector_list in optimal_vectors:
                 if clamp:
                     output_expanded = clamp_output(output_expanded, threshold)
 
-                FOM = FOM_calculator(torch.permute(output_expanded.repeat(1, 3, 1, 1), (0, 2, 3, 1)).numpy())
+                FOM = FOM_calculator(
+                    torch.permute(
+                        output_expanded.repeat(1, 3, 1, 1), (0, 2, 3, 1)
+                    ).numpy()
+                )
                 FOM_measurements.append(FOM)
                 FOM_global.extend(FOM)
 
                 if np.max(np.array(FOM_measurements)) > largest_FOM:
-                    largest_FOM = np.max(np.array(FOM_measurements)) 
+                    largest_FOM = np.max(np.array(FOM_measurements))
 
                 grid = torchvision.utils.make_grid(output_expanded.cpu())
 
@@ -106,7 +120,7 @@ for optimal_vector_list in optimal_vectors:
 
                 if save_images:
                     save_image(grid, log_dir)
-            
+
             FOM_measurements = np.array(FOM_measurements)
             average = np.mean(FOM_measurements)
 

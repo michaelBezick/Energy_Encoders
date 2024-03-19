@@ -7,8 +7,9 @@ from torchvision.models import VGG16_Weights
 def dirac_delta(x, y):
     return (1 - x) * (1 - y) + (x * y)
 
+
 def Potts_Energy_Fn(vector, interactions):
-    if (len(vector.size()) == 1):
+    if len(vector.size()) == 1:
         vector = vector.unsqueeze(1)
     dirac_delta_terms = dirac_delta(vector, vector.t())
     dirac_delta_terms = torch.triu(dirac_delta_terms)
@@ -16,33 +17,25 @@ def Potts_Energy_Fn(vector, interactions):
 
     return torch.sum(energy_matrix)
 
+
 class AttnBlock(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
         self.in_channels = in_channels
 
         self.norm = torch.nn.GroupNorm(num_groups=8, num_channels=self.in_channels)
-        self.q = torch.nn.Conv2d(in_channels,
-                                 in_channels,
-                                 kernel_size=1,
-                                 stride=1,
-                                 padding=0)
-        self.k = torch.nn.Conv2d(in_channels,
-                                 in_channels,
-                                 kernel_size=1,
-                                 stride=1,
-                                 padding=0)
-        self.v = torch.nn.Conv2d(in_channels,
-                                 in_channels,
-                                 kernel_size=1,
-                                 stride=1,
-                                 padding=0)
-        self.proj_out = torch.nn.Conv2d(in_channels,
-                                        in_channels,
-                                        kernel_size=1,
-                                        stride=1,
-                                        padding=0)
-
+        self.q = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
+        self.k = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
+        self.v = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
+        self.proj_out = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
 
     def forward(self, x):
         h_ = x
@@ -52,25 +45,27 @@ class AttnBlock(nn.Module):
         v = self.v(h_)
 
         # compute attention
-        b,c,h,w = q.shape
-        q = q.reshape(b,c,h*w)
-        q = q.permute(0,2,1)   # b,hw,c
-        k = k.reshape(b,c,h*w) # b,c,hw
-        w_ = torch.bmm(q,k)     # b,hw,hw    w[b,i,j]=sum_c q[b,i,c]k[b,c,j]
-        w_ = w_ * (int(c)**(-0.5))
+        b, c, h, w = q.shape
+        q = q.reshape(b, c, h * w)
+        q = q.permute(0, 2, 1)  # b,hw,c
+        k = k.reshape(b, c, h * w)  # b,c,hw
+        w_ = torch.bmm(q, k)  # b,hw,hw    w[b,i,j]=sum_c q[b,i,c]k[b,c,j]
+        w_ = w_ * (int(c) ** (-0.5))
         w_ = torch.nn.functional.softmax(w_, dim=2)
 
         # attend to values
-        v = v.reshape(b,c,h*w)
-        w_ = w_.permute(0,2,1)   # b,hw,hw (first hw of k, second of q)
-        h_ = torch.bmm(v,w_)     # b, c,hw (hw of q) h_[b,c,j] = sum_i v[b,c,i] w_[b,i,j]
-        h_ = h_.reshape(b,c,h,w)
+        v = v.reshape(b, c, h * w)
+        w_ = w_.permute(0, 2, 1)  # b,hw,hw (first hw of k, second of q)
+        h_ = torch.bmm(v, w_)  # b, c,hw (hw of q) h_[b,c,j] = sum_i v[b,c,i] w_[b,i,j]
+        h_ = h_.reshape(b, c, h, w)
 
         h_ = self.proj_out(h_)
 
-        return x+h_
+        return x + h_
+
+
 class ResnetBlock(nn.Module):
-    #Employs intra block skip connection, which needs a (1, 1) convolution to scale to out_channels
+    # Employs intra block skip connection, which needs a (1, 1) convolution to scale to out_channels
 
     def __init__(self, in_channels, out_channels, kernel_size, in_channel_image):
         super().__init__()
@@ -85,7 +80,7 @@ class ResnetBlock(nn.Module):
     def forward(self, x, embeddings):
         xCopy = x
 
-        x = torch.cat((x, embeddings), dim = 1)
+        x = torch.cat((x, embeddings), dim=1)
 
         x = self.layer1(x)
         x = self.SiLU(x)
@@ -95,8 +90,10 @@ class ResnetBlock(nn.Module):
         x = self.SiLU(x)
 
         return x
+
+
 class ResnetBlockVAE(nn.Module):
-    #Employs intra block skip connection, which needs a (1, 1) convolution to scale to out_channels
+    # Employs intra block skip connection, which needs a (1, 1) convolution to scale to out_channels
 
     def __init__(self, in_channels, out_channels, kernel_size, in_channel_image):
         super().__init__()
@@ -120,6 +117,7 @@ class ResnetBlockVAE(nn.Module):
 
         return x
 
+
 class Block(nn.Module):
 
     def __init__(self, in_channels, out_channels, kernel_size):
@@ -128,7 +126,9 @@ class Block(nn.Module):
         self.out_channels = out_channels
 
         self.layer = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size, padding = 'same', bias = False),
+            nn.Conv2d(
+                in_channels, out_channels, kernel_size, padding="same", bias=False
+            ),
             nn.GroupNorm(8, out_channels),
         )
 
@@ -136,39 +136,62 @@ class Block(nn.Module):
         x = self.layer(x)
 
         return x
+
+
 class VGGPerceptualLoss(torch.nn.Module):
-    '''
+    """
     Returns perceptual loss of two batches of images
-    '''
+    """
+
     def __init__(self, resize=True):
         super(VGGPerceptualLoss, self).__init__()
-        '''
+        """
         You can adjust the indices of the appended blocks to change
         capacity and size of loss model.
-        '''
+        """
         blocks = []
-        blocks.append(torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT).features[:4].eval())
-        blocks.append(torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT).features[4:8].eval())
-        blocks.append(torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT).features[8:14].eval())
-        blocks.append(torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT).features[14:20].eval())
+        blocks.append(
+            torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT).features[:4].eval()
+        )
+        blocks.append(
+            torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT).features[4:8].eval()
+        )
+        blocks.append(
+            torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT)
+            .features[8:14]
+            .eval()
+        )
+        blocks.append(
+            torchvision.models.vgg16(weights=VGG16_Weights.DEFAULT)
+            .features[14:20]
+            .eval()
+        )
         for bl in blocks:
             for p in bl.parameters():
                 p.requires_grad = False
         self.blocks = torch.nn.ModuleList(blocks)
         self.transform = torch.nn.functional.interpolate
         self.resize = resize
-        self.register_buffer("mean", torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1))
-        self.register_buffer("std", torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1))
+        self.register_buffer(
+            "mean", torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
+        )
+        self.register_buffer(
+            "std", torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
+        )
 
     def forward(self, input, target, feature_layers=[0, 1, 2, 3], style_layers=[]):
         if input.shape[1] != 3:
             input = input.repeat(1, 3, 1, 1)
             target = target.repeat(1, 3, 1, 1)
-        input = (input-self.mean) / self.std
-        target = (target-self.mean) / self.std
+        input = (input - self.mean) / self.std
+        target = (target - self.mean) / self.std
         if self.resize:
-            input = self.transform(input, mode='bilinear', size=(224, 224), align_corners=False)
-            target = self.transform(target, mode='bilinear', size=(224, 224), align_corners=False)
+            input = self.transform(
+                input, mode="bilinear", size=(224, 224), align_corners=False
+            )
+            target = self.transform(
+                target, mode="bilinear", size=(224, 224), align_corners=False
+            )
         loss = 0.0
         x = input
         y = target
@@ -185,4 +208,3 @@ class VGGPerceptualLoss(torch.nn.Module):
                 loss += torch.nn.functional.l1_loss(gram_x, gram_y)
 
         return loss
-
