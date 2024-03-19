@@ -29,11 +29,7 @@ class BVAE(pl.LightningModule):
         super().__init__()
 
         self.sampler = torch.multinomial
-<<<<<<< HEAD
-        self.shift = 0 #dilation to go back to index format
-=======
         self.shift = 0
->>>>>>> 828b17b852dab84328989fba4104dfb6fa4df237
         if model_type == Model_Type.QUBO:
             self.model_type = 'QUBO'
             num_logits = 2
