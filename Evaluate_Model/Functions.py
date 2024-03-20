@@ -15,6 +15,16 @@ from torch.utils.data import Dataset
 from Modules.Energy_Encoder_Classes import BVAE, Model_Type
 
 
+def get_annealing_vectors():
+    blume_capel_vectors = torch.load(
+        "../Annealing/Blume-Capel/neural_annealing_vectors.pt"
+    )
+    potts_vectors = torch.load("../Annealing/Potts/neural_annealing_vectors.pt")
+    QUBO_vectors = torch.load("../Annealing/QUBO/neural_annealing_vectors.pt")
+
+    return blume_capel_vectors, potts_vectors, QUBO_vectors
+
+
 def get_model_name_and_type(model_dir):
     model_name = model_dir.split("/")[2]
     "Need to fix this later"
@@ -233,7 +243,6 @@ def get_list_of_models():
 
             # need this because checkpoint file is not sole file
             files = os.listdir(model_path)
-            print(files)
             checkpoint_path = ""
             for potential_checkpoint in files:
                 if ".ckpt" in potential_checkpoint:
@@ -241,7 +250,6 @@ def get_list_of_models():
                     break
 
             model_path = model_path + "/" + checkpoint_path
-            print(model_path)
 
             models_list.append(model_path)
 

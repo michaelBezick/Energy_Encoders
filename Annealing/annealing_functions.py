@@ -79,7 +79,7 @@ class Potts_Energy_Fn(nn.Module):
         return torch.sum(energy_matrix, dim=1)
 
 
-def load_energy_functions(device):
+def load_energy_functions(device, normalization=False):
     num_vars = 64
 
     num_per_degree = [num_vars, num_vars * (num_vars - 1) // 2]
@@ -101,6 +101,23 @@ def load_energy_functions(device):
     QUBO_coeff = torch.load(
         "../Evaluate_Model/Energy_Functions/QUBO_energy_fn_coefficients.pt"
     ).to(device)
+
+    if normalization == True:
+        Blume_Capel_coeff_degree1 = Blume_Capel_coeff[0] / torch.norm(
+            Blume_Capel_coeff[0]
+        )
+        Blume_Capel_coeff_degree2 = Blume_Capel_coeff[1] / torch.norm(
+            Blume_Capel_coeff[1]
+        )
+        Blume_Capel_coeff = nn.ParameterList(
+            [Blume_Capel_coeff_degree1, Blume_Capel_coeff_degree2]
+        )
+
+        Potts_coeff = Potts_coeff / torch.norm(Potts_coeff)
+
+        QUBO_coeff_degree1 = QUBO_coeff[0] / torch.norm(QUBO_coeff[0])
+        QUBO_coeff_degree2 = QUBO_coeff[1] / torch.norm(QUBO_coeff[1])
+        QUBO_coeff = nn.ParameterList([QUBO_coeff_degree1, QUBO_coeff_degree2])
 
     Blume_Capel_model.coefficients = Blume_Capel_coeff
     Potts_model = Potts_Energy_Fn(Potts_coeff)

@@ -6,8 +6,6 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-# pdb.set_trace()
-
 from Functions import (
     BVAE,
     get_energy_fn,
@@ -22,6 +20,9 @@ from Functions import (
     scale_vector_copy_gradient,
 )
 from Modules.Energy_Encoder_Classes import CorrelationalLoss, Model_Type
+
+# pdb.set_trace()
+
 
 """
 Code requires that each model be stored as its own directory within ./Models as soley a .ckpt file.

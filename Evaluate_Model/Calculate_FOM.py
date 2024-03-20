@@ -11,6 +11,7 @@ from Functions import (
     BVAE,
     clamp_output,
     expand_output,
+    get_annealing_vectors,
     get_energy_fn,
     get_folder_path_from_model_path,
     get_list_of_models,
@@ -24,7 +25,7 @@ from Functions import (
 from Modules.Energy_Encoder_Classes import CorrelationalLoss
 
 device = "cuda"
-save_images = True
+save_images = False
 
 clamp, threshold = threshold()
 
@@ -39,98 +40,111 @@ models_list = get_list_of_models()
 
 log_dir = ""
 
+"""
 # load QIOTE vectors
 optimal_vectors_list_qiote = None
 with open("optimal_vectors.pkl", "rb") as file:
     optimal_vector_list_qiote = pickle.load(file)
 
-# load Neural Annealing Vectors
-optimal_vector_list_neural = torch.load("./neural_annealing_vectors.pt")
-print(optimal_vector_list_neural.size())
+"""
 
-optimal_vectors = [optimal_vector_list_qiote, optimal_vector_list_neural]
 
-num_experiment = 0
+Blume_Capel_vectors, Potts_vectors, QUBO_vectors = get_annealing_vectors()
+optimal_vectors = [Blume_Capel_vectors, Potts_vectors, QUBO_vectors]
 
-for optimal_vector_list in optimal_vectors:
+"""All neural annealing for now"""
+num_experiment = 1
 
-    experiment_type = ""
+# if num_experiment == 0:
+#     experiment_type = "QIOTE"
+#     num_iters = 10
+#     num_experiment += 1
+#     bias = 0
+# else:
+#     experiment_type = "Neural"
+#     num_iters = optimal_vector_list.size()[0] // 100
+#     bias = 0
 
-    if num_experiment == 0:
-        experiment_type = "QIOTE"
-        num_iters = 10
-        num_experiment += 1
-        bias = 0
+largest_FOM_global = 0
+for model_dir in tqdm(models_list):
+    energies = []
+    FOM_global = []
+
+    model_name, model_type = get_model_name_and_type(model_dir)
+
+    energy_fn = None
+
+    if model_name == "Blume-Capel":
+        optimal_vector_list = optimal_vectors[0]
+    elif model_name == "Potts":
+        optimal_vector_list = optimal_vectors[1]
     else:
-        experiment_type = "Neural"
-        num_iters = optimal_vector_list_neural.size() // 100
-        bias = 0
+        optimal_vector_list = optimal_vectors[2]
 
-    for model_dir in tqdm(models_list):
-        energies = []
-        FOM_global = []
+    print(optimal_vector_list.size())
+    num_iters = optimal_vector_list.size()[0] // 100
+    print(num_iters)
+    energy_fn = get_energy_fn(model_name, energy_fn_list)
 
-        model_name, model_type = get_model_name_and_type(model_dir)
+    model = BVAE(energy_fn, energy_loss_fn, h_dim=128, model_type=model_type).to(device)
+    model = load_from_checkpoint(model, model_dir)
+    model = model.eval()
 
-        energy_fn = get_energy_fn(model_name, energy_fn_list)
+    num_logits, scale = get_sampling_vars(model)
 
-        model = BVAE(energy_fn, energy_loss_fn, h_dim=128, model_type=model_type).to(
-            device
-        )
-        model = load_from_checkpoint(model, model_dir)
-        model = model.eval()
+    zero_tensor = torch.zeros([100, 64])
+    FOM_measurements = []
+    largest_FOM = 0
 
-        num_logits, scale = get_sampling_vars(model)
+    with torch.no_grad():
+        for iters in range(num_iters):
+            zero_tensor = optimal_vector_list[iters * 100 : (iters + 1) * 100]
 
-        zero_tensor = torch.zeros([100, 64])
-        FOM_measurements = []
-        largest_FOM = 0
+            vectors = zero_tensor.cuda()
 
-        with torch.no_grad():
-            for iters in range(num_iters):
-                zero_tensor = optimal_vector_list[iters * 100 : (iters + 1) * 100]
+            vectors_energies = energy_fn(vectors)
+            numpy_energies = vectors_energies.detach().cpu().numpy()
+            energies.extend(numpy_energies)
 
-                vectors = zero_tensor.cuda()
+            output = model.vae.decode(vectors)
+            output_expanded = expand_output(output)
 
-                vectors_energies = energy_fn(vectors)
-                numpy_energies = vectors_energies.detach().cpu().numpy()
-                energies.extend(numpy_energies)
+            if clamp:
+                output_expanded = clamp_output(output_expanded, threshold)
 
-                output = model.vae.decode(vectors)
-                output_expanded = expand_output(output)
+            FOM = FOM_calculator(
+                torch.permute(output_expanded.repeat(1, 3, 1, 1), (0, 2, 3, 1)).numpy()
+            )
+            FOM_measurements.append(FOM)
+            FOM_global.extend(FOM)
 
-                if clamp:
-                    output_expanded = clamp_output(output_expanded, threshold)
+            if np.max(np.array(FOM_measurements)) > largest_FOM:
+                largest_FOM = np.max(np.array(FOM_measurements))
 
-                FOM = FOM_calculator(
-                    torch.permute(
-                        output_expanded.repeat(1, 3, 1, 1), (0, 2, 3, 1)
-                    ).numpy()
-                )
-                FOM_measurements.append(FOM)
-                FOM_global.extend(FOM)
+            grid = torchvision.utils.make_grid(output_expanded.cpu())
 
-                if np.max(np.array(FOM_measurements)) > largest_FOM:
-                    largest_FOM = np.max(np.array(FOM_measurements))
+            model_folder_path = get_folder_path_from_model_path(model_dir)
+            log_dir = model_folder_path
 
-                grid = torchvision.utils.make_grid(output_expanded.cpu())
+            if save_images:
+                save_image(grid, log_dir)
 
-                model_folder_path = get_folder_path_from_model_path(model_dir)
-                log_dir = model_folder_path
+        FOM_measurements = np.array(FOM_measurements)
+        average = np.mean(FOM_measurements)
 
-                if save_images:
-                    save_image(grid, log_dir)
+        if largest_FOM > largest_FOM_global:
+            largest_FOM_global = largest_FOM
 
-            FOM_measurements = np.array(FOM_measurements)
-            average = np.mean(FOM_measurements)
+        with open(log_dir + "/FOM_data.txt", "w") as file:
+            file.write(f"Average FOM: {average}\n")
+            file.write(f"Max FOM: {largest_FOM}")
 
-            with open(log_dir + "/FOM_data.txt", "w") as file:
-                file.write(f"Average FOM: {average}\n")
-                file.write(f"Max FOM: {largest_FOM}")
+        plt.figure()
+        plt.scatter(energies, FOM_global)
+        plt.xlabel("Energy of vectors")
+        plt.ylabel("FOM of samples")
+        plt.title("Sampled correlation")
+        plt.savefig(log_dir + "/SampledCorrelation.png")
 
-            plt.figure()
-            plt.scatter(energies, FOM_global)
-            plt.xlabel("Energy of vectors")
-            plt.ylabel("FOM of samples")
-            plt.title("Sampled correlation")
-            plt.savefig(log_dir + "/SampledCorrelation.png")
+with open("Experiment_Summary.txt", "w") as file:
+    file.write(f"Experiment max FOM: {largest_FOM_global}")

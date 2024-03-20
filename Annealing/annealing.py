@@ -3,7 +3,7 @@ import time
 import matplotlib.pyplot as plt
 import torch
 
-from annealing_classes import RNN_Concat, Variational_Free_Energy
+from annealing_classes import RNN, RNN_Concat, RNN_Tensorized, Variational_Free_Energy
 from annealing_functions import load_energy_functions
 
 device = "cuda"
@@ -15,8 +15,9 @@ temperature = 1
 N_gradient_descent = 1
 N_samples = 50
 log_step_size = 10
-min_energy_repeat_threshold = 400
+min_energy_repeat_threshold = 600
 vector_length = 64
+num_vector_samples = 30
 
 print_vector = False
 plot = True
@@ -24,7 +25,7 @@ save_vectors = True
 
 # experiment with normalizing energy functions
 Blume_Capel_energy, Potts_energy, QUBO_energy = load_energy_functions(
-    device
+    device, normalization=False
 )  # loads from Evaluate Model
 energy_fn_list = [Blume_Capel_energy, Potts_energy, QUBO_energy]
 
@@ -34,7 +35,8 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
         energy_fn, N_samples=N_samples, batch_size=batch_size
     )
     energy_loss = energy_loss.to(device)
-    rnn = RNN_Concat().to(device)
+    # rnn = RNN_Concat().to(device)
+    rnn = RNN_Tensorized().to(device)
 
     optimizer = torch.optim.Adam(params=rnn.parameters(), lr=lr)
 
@@ -78,20 +80,22 @@ for experiment_number, energy_fn in enumerate(energy_fn_list):
     min_energy_repeats = 0
     epoch = 0
     for epoch in range(epochs):
-        temperature -= 1 / epochs
-        if temperature <= 0:
-            temperature = 0
+        if epoch > 100:
+            temperature -= 1 / (epochs - 100)
+            if temperature <= 0:
+                temperature = 0
         sigma_hat = rnn(sigma)
 
         loss = energy_loss(sigma_hat, temperature)
 
         # adding vectors to unique vector set
-        list_of_vectors = torch.bernoulli(sigma).tolist()
-        for vector in list_of_vectors:
-            vector_tuple = tuple(vector)
-            if vector_tuple not in unique_vector_set:
-                unique_vector_set.add(vector_tuple)
-                unique_vector_list.append(vector)
+        for i in range(num_vector_samples):
+            list_of_vectors = torch.bernoulli(sigma).tolist()
+            for vector in list_of_vectors:
+                vector_tuple = tuple(vector)
+                if vector_tuple not in unique_vector_set:
+                    unique_vector_set.add(vector_tuple)
+                    unique_vector_list.append(vector)
 
         # finding min energy, with consideration of repeats
         min_energy_repeats += 1
