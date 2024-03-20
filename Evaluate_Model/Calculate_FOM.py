@@ -10,6 +10,7 @@ from tqdm import tqdm
 from Functions import (
     BVAE,
     clamp_output,
+    compute_pearson_correlation,
     expand_output,
     get_annealing_vectors,
     get_energy_fn,
@@ -115,8 +116,9 @@ for model_dir in tqdm(models_list):
             FOM = FOM_calculator(
                 torch.permute(output_expanded.repeat(1, 3, 1, 1), (0, 2, 3, 1)).numpy()
             )
-            FOM_measurements.append(FOM)
-            FOM_global.extend(FOM)
+
+            FOM_measurements.extend(FOM.numpy().flatten().tolist())
+            FOM_global.extend(FOM.numpy().flatten().tolist())
 
             if np.max(np.array(FOM_measurements)) > largest_FOM:
                 largest_FOM = np.max(np.array(FOM_measurements))
@@ -135,9 +137,13 @@ for model_dir in tqdm(models_list):
         if largest_FOM > largest_FOM_global:
             largest_FOM_global = largest_FOM
 
+        # calculating pearson correlation
+        pearson_correlation = compute_pearson_correlation(FOM_global, energies)
+
         with open(log_dir + "/FOM_data.txt", "w") as file:
             file.write(f"Average FOM: {average}\n")
-            file.write(f"Max FOM: {largest_FOM}")
+            file.write(f"Max FOM: {largest_FOM}\n")
+            file.write(f"pearson_correlation: {pearson_correlation}")
 
         plt.figure()
         plt.scatter(energies, FOM_global)
@@ -145,6 +151,7 @@ for model_dir in tqdm(models_list):
         plt.ylabel("FOM of samples")
         plt.title("Sampled correlation")
         plt.savefig(log_dir + "/SampledCorrelation.png")
+
 
 with open("Experiment_Summary.txt", "w") as file:
     file.write(f"Experiment max FOM: {largest_FOM_global}")

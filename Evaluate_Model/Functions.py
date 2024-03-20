@@ -15,6 +15,46 @@ from torch.utils.data import Dataset
 from Modules.Energy_Encoder_Classes import BVAE, Model_Type
 
 
+def compute_pearson_correlation(x_FOM, y_Energy):
+
+    x_FOM = torch.Tensor(x_FOM)
+    y_Energy = torch.Tensor(y_Energy)
+
+    # x should be a vector of length n
+    # y should be a vector of length n
+
+    x_FOM = torch.squeeze(x_FOM)
+    y_Energy = torch.squeeze(y_Energy)
+    x_mean = torch.mean(x_FOM)
+    y_mean = torch.mean(y_Energy)
+
+    x_deviation_from_mean = x_FOM - x_mean
+    y_deviation_from_mean = y_Energy - y_mean
+
+    covariance = torch.einsum("i,i->", x_deviation_from_mean, y_deviation_from_mean)
+
+    if covariance == 0:
+        print("COVARIANCE 0")
+        exit()
+
+    std_dev_x = torch.sqrt(
+        torch.einsum("i,i->", x_deviation_from_mean, x_deviation_from_mean)
+    )
+    if std_dev_x == 0:
+        print("std_dev_x 0")
+        exit()
+    std_dev_y = torch.sqrt(
+        torch.einsum("i,i->", y_deviation_from_mean, y_deviation_from_mean)
+    )
+    if std_dev_y == 0:
+        print("std_dev_y 0")
+        exit()
+
+    pearson_correlation_coefficient = covariance / (std_dev_x * std_dev_y)
+
+    return pearson_correlation_coefficient
+
+
 def get_annealing_vectors():
     blume_capel_vectors = torch.load(
         "../Annealing/Blume-Capel/neural_annealing_vectors.pt"
