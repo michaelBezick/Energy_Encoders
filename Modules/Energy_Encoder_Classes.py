@@ -88,7 +88,7 @@ class BVAE(pl.LightningModule):
         acceptance_probability = torch.min(acceptance_prob_LHS, acceptance_prob_RHS)
         
         #new acceptance probability, just random bit flips
-        acceptance_probability = torch.ones((self.batch_size), device=self.device)
+        acceptance_probability = torch.ones((self.batch_size), device=self.device).float()
 
         s_conjoined = torch.cat((s.unsqueeze(1), s_prime.unsqueeze(1)), dim = 1)
 
