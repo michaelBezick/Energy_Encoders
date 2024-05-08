@@ -2,7 +2,7 @@
 # FILENAME: job2.sh
 cd $SLURM_SUBMIT_DIR
 cd ./Blume-Capel
-module load anaconda
+module load anaconda/2020.11-py38
 pip install beartype
 export WORLD_SIZE=NUM_GPUS
 export NODE_RANK=RANK

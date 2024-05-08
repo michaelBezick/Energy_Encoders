@@ -1,6 +1,6 @@
 #!/bin/bash
 # FILENAME: job2.sh
-module load anaconda
+module load anaconda/2020.11-py38
 pip install beartype
 cd $SLURM_SUBMIT_DIR
 cd ./QUBO
