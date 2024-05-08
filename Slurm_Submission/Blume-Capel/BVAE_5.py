@@ -49,16 +49,19 @@ checkpoint_callback = ModelCheckpoint(filename = "good", every_n_train_steps = 3
 
 torch.set_float32_matmul_precision('high')
 
-dataset = np.expand_dims(np.load("top_0.npy"), 1)
+def clamp_output(tensor: torch.Tensor, threshold):
+    return torch.where(tensor > threshold, torch.tensor(1.0), torch.tensor(0.0))
+
+dataset = np.expand_dims(np.load("../../Files/TPV_dataset.npy"), 1)
 normalizedDataset = (dataset - np.min(dataset)) / (np.max(dataset) - np.min(dataset))
-    
-normalizedDataset = np.multiply(normalizedDataset, 2) - 1
 
 normalizedDataset = normalizedDataset.astype(np.float32)
 
 dataset = torch.from_numpy(normalizedDataset)
 
-labels = torch.from_numpy(np.squeeze(np.load('FOM_labels.npy')))
+dataset = clamp_output(dataset, 0.5)
+
+labels = torch.load("../../Files/FOM_labels_new.pt")
 
 labeled_dataset = LabeledDataset(dataset, labels)
 
