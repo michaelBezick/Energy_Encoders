@@ -115,6 +115,8 @@ class BVAE(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, FOM_labels = batch
 
+        FOM_labels = FOM_labels.float()
+
         opt_VAE= self.optimizers()
         scheduler = self.lr_schedulers()
 
