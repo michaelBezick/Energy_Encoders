@@ -94,6 +94,7 @@ class BVAE(pl.LightningModule):
         acceptance_prob_RHS = torch.pow(e_matrix, (initial_energy - transitioned_energy) / (self.temperature))        
         acceptance_prob_LHS = torch.ones((self.batch_size), device=self.device)
         acceptance_probability = torch.min(acceptance_prob_LHS, acceptance_prob_RHS)
+        acceptance_probability = torch.ones((self.batch_size), device=self.device).float()
 
         acceptance_sample = torch.bernoulli(acceptance_probability).unsqueeze(1).int()
         acceptance_sample_expanded = acceptance_sample.expand(self.batch_size, self.latent_vector_dim)

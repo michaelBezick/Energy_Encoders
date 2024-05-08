@@ -95,6 +95,7 @@ class BVAE(pl.LightningModule):
         acceptance_prob_RHS = torch.pow(e_matrix, (initial_energy - transitioned_energy) / (self.temperature))        
         acceptance_prob_LHS = torch.ones((self.batch_size), device=self.device)
         acceptance_probability = torch.min(acceptance_prob_LHS, acceptance_prob_RHS)
+        acceptance_probability = torch.ones((self.batch_size), device=self.device).float()
 
         acceptance_sample = torch.bernoulli(acceptance_probability).unsqueeze(1).int()
         acceptance_sample_expanded = acceptance_sample.expand(self.batch_size, self.latent_vector_dim)
@@ -145,7 +146,6 @@ class BVAE(pl.LightningModule):
         transitioned_vectors_with_gradient = self.scale_vector_copy_gradient(transitioned_vectors.long(), probabilities)
         """"""
 
-        print(transitioned_vectors_with_gradient)
         x_hat = self.vae.decode(transitioned_vectors_with_gradient)
 
         #logging generated images
