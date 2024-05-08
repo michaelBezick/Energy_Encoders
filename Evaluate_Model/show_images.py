@@ -26,8 +26,7 @@ from Functions import (
 from Modules.Energy_Encoder_Classes import CorrelationalLoss
 
 device = "cuda"
-save_images = False
-normalize = False
+save_images = True
 
 clamp, threshold = threshold()
 
@@ -67,9 +66,6 @@ num_experiment = 1
 #     num_iters = optimal_vector_list.size()[0] // 100
 #     bias = 0
 
-def mean_normalize(images: torch.Tensor):
-    return (images - torch.min(images)) / (torch.max(images) - torch.min(images))
-
 largest_FOM_global = 0
 for model_dir in tqdm(models_list):
     energies = []
@@ -81,8 +77,10 @@ for model_dir in tqdm(models_list):
 
     if model_name == "Blume-Capel":
         optimal_vector_list = optimal_vectors[0]
+        continue
     elif model_name == "Potts":
         optimal_vector_list = optimal_vectors[1]
+        continue
     else:
         optimal_vector_list = optimal_vectors[2]
 
@@ -114,9 +112,6 @@ for model_dir in tqdm(models_list):
             output = model.vae.decode(vectors)
             output_expanded = expand_output(output)
 
-            if normalize:
-                output_expanded = mean_normalize(output_expanded)
-
             if clamp:
                 output_expanded = clamp_output(output_expanded, threshold)
 
@@ -130,13 +125,15 @@ for model_dir in tqdm(models_list):
             if np.max(np.array(FOM_measurements)) > largest_FOM:
                 largest_FOM = np.max(np.array(FOM_measurements))
 
-            grid = torchvision.utils.make_grid(output_expanded.cpu())
+            grid = torchvision.utils.make_grid(output_expanded[0:16, :, :].cpu(), nrow=4)
 
             model_folder_path = get_folder_path_from_model_path(model_dir)
             log_dir = model_folder_path
+            print(log_dir)
 
             if save_images:
-                save_image(grid, log_dir)
+                save_image(grid, log_dir + "generated.png", dpi=600)
+                exit()
 
         FOM_measurements = np.array(FOM_measurements)
         average = np.mean(FOM_measurements)
