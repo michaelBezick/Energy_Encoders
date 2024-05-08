@@ -145,6 +145,7 @@ class BVAE(pl.LightningModule):
         transitioned_vectors_with_gradient = self.scale_vector_copy_gradient(transitioned_vectors.long(), probabilities)
         """"""
 
+        print(transitioned_vectors_with_gradient)
         x_hat = self.vae.decode(transitioned_vectors_with_gradient)
 
         #logging generated images
