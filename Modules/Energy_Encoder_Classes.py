@@ -245,6 +245,7 @@ class CorrelationalLoss():
 
     def print_losses(self):
         print(f"correlation_loss: {self.correlation_loss}\tenergy_loss: {self.average_energy_loss}\tslope_loss: {self.slope_loss}")
+
     def compute_slope(self):
         return self.covariance / self.std_dev_x
 
