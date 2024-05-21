@@ -3,6 +3,13 @@ import torch.nn as nn
 import torchvision
 from torchvision.models import VGG16_Weights
 
+def calc_norm(terms):
+    sum_of_squares = torch.zeros(1)
+    for term in terms:
+        sum_of_squares = sum_of_squares + torch.sum(term**2)
+
+    # sum_of_squares = torch.sum(terms[0] ** 2) + torch.sum(terms[1] ** 2)
+    return torch.sqrt(sum_of_squares)
 
 def dirac_delta(x, y):
     return (1 - x) * (1 - y) + (x * y)
