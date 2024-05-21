@@ -3,9 +3,9 @@ import numpy as np
 import torch
 from Energy_Encoder_Classes import BVAE, CorrelationalLoss, Model_Type, LabeledDataset
 from Energy_Encoder_Modules import calc_norm
-# import polytensor.polytensor as polytensor
+import polytensor.polytensor as polytensor
 """TEMPORARY CHANGE CHANGE BACK PLEASE"""
-import polytensor
+#import polytensor
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
 from torch.utils.data import DataLoader
@@ -22,7 +22,7 @@ reconstruction_weight = 0.6
 perceptual_weight = 0.025
 energy_weight = 1e-3
 norm_weight = 10
-h_dim = 32 #changed
+h_dim = 64 #changed
 batch_size = 100 #changed
 num_vars = 64
 model_type = Model_Type.QUBO
