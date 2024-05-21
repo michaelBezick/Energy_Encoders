@@ -1,7 +1,8 @@
 import os
 import numpy as np
 import torch
-from Modules.Energy_Encoder_Classes import BVAE, CorrelationalLoss, Model_Type, LabeledDataset
+from Energy_Encoder_Classes import BVAE, CorrelationalLoss, Model_Type, LabeledDataset
+from Energy_Encoder_Modules import calc_norm
 import polytensor.polytensor as polytensor
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -11,13 +12,14 @@ import pytorch_lightning as pl
 num_MCMC_iterations = 3
 temperature = 0.1
 resume_from_checkpoint = False
-num_devices = 2
-num_nodes = 2
+num_devices = 2 #changed
+num_nodes = 2 #changed
 num_workers = 1
 epochs = 10_000
 reconstruction_weight = 0.6
 perceptual_weight = 0.025
 energy_weight = 1e-3
+norm_weight = 10
 h_dim = 128
 batch_size = 100
 num_vars = 64
@@ -25,12 +27,24 @@ model_type = Model_Type.QUBO
 
 ###############################################################
 
-energy_fn = torch.load("./QUBO_energy_fn.pt")
+num_vars = 64
+
+num_per_degree = [num_vars, num_vars * (num_vars - 1) // 2]
+sample_fn = lambda: torch.randn(1, device="cuda")
+terms = polytensor.generators.coeffPUBORandomSampler(
+    n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
+)
+
+terms = polytensor.generators.denseFromSparse(terms, num_vars)
+norm = calc_norm(terms)
+terms[0] = terms[0] / norm
+terms[1] = terms[1] / norm
+
+energy_fn = polytensor.DensePolynomial(terms)
 
 energy_loss_fn = CorrelationalLoss(10., 0.01, 0.)
 
-
-bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, energy_weight=energy_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature, batch_size=batch_size)
+bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, energy_weight=energy_weight, norm_weight=norm_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature, batch_size=batch_size)
 
 temperature_str = str(temperature).replace('.', ',')
 model_type_str = bvae.model_type
@@ -68,7 +82,6 @@ labeled_dataset = LabeledDataset(dataset, labels)
 
 train_loader = DataLoader(labeled_dataset, num_workers = num_workers, batch_size = batch_size, shuffle = True, drop_last = True)
 
-#logger = CSVLogger(save_dir="logs/", name=experiment_name)
 logger = TensorBoardLogger(save_dir="logs/", name=experiment_name)
 
 lr_monitor = LearningRateMonitor(logging_interval = 'step')

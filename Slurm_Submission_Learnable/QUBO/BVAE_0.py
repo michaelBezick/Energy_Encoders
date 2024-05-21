@@ -4,8 +4,6 @@ import torch
 from Energy_Encoder_Classes import BVAE, CorrelationalLoss, Model_Type, LabeledDataset
 from Energy_Encoder_Modules import calc_norm
 import polytensor.polytensor as polytensor
-"""TEMPORARY CHANGE CHANGE BACK PLEASE"""
-#import polytensor
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
 from torch.utils.data import DataLoader
@@ -14,16 +12,16 @@ import pytorch_lightning as pl
 num_MCMC_iterations = 0
 temperature = 0.1
 resume_from_checkpoint = False
-num_devices = 1 #changed
-num_nodes = 1 #changed
+num_devices = 2 #changed
+num_nodes = 2 #changed
 num_workers = 1
 epochs = 10_000
 reconstruction_weight = 0.6
 perceptual_weight = 0.025
 energy_weight = 1e-3
 norm_weight = 10
-h_dim = 64 #changed
-batch_size = 100 #changed
+h_dim = 128
+batch_size = 100
 num_vars = 64
 model_type = Model_Type.QUBO
 
