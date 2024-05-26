@@ -11,7 +11,7 @@ import pytorch_lightning as pl
 
 num_MCMC_iterations = 0
 temperature = 0.1
-resume_from_checkpoint = False
+resume_from_checkpoint = True
 num_devices = 2 #changed
 num_nodes = 2 #changed
 num_workers = 1
@@ -54,11 +54,12 @@ experiment_name = f"{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperatur
 checkpoint_path = ""
 if resume_from_checkpoint:
     checkpoint_path1 = f"./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/"
-    checkpoint_path2 = os.listdir(checkpoint_path1)[-1]
+    checkpoint_path2 = os.listdir(checkpoint_path1)[0]
     checkpoint_path = os.path.join(checkpoint_path1, checkpoint_path2)
     checkpoint_path = checkpoint_path + "/checkpoints/"
     file_checkpoint = os.listdir(checkpoint_path)[0]
     checkpoint_path = os.path.join(checkpoint_path, file_checkpoint)
+    print(checkpoint_path)
 
 checkpoint_callback = ModelCheckpoint(filename = "good", every_n_train_steps = 300)
 
