@@ -31,9 +31,9 @@ order = 4
 
 ###############################################################
 
+
 num_vars = 64
 
-# num_per_degree = [num_vars, num_vars * (num_vars - 1) // 2]
 num_per_degree = [
     num_vars,
     num_vars * (num_vars - 1) // 2,
@@ -43,17 +43,27 @@ num_per_degree = [
 
 
 sample_fn = lambda: torch.randn(1, device="cuda")
+
+
 terms = polytensor.generators.coeffPUBORandomSampler(
     n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
 )
 
+
 terms = polytensor.generators.denseFromSparse(terms, num_vars)
 
+
+#test for fourth degree
+terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
+
 norm = calc_norm(terms)
+print(norm)
 terms[0] = terms[0] / norm
 terms[1] = terms[1] / norm
 terms[2] = terms[2] / norm
+terms[3] = terms[3] / norm
 norm = calc_norm(terms)
+print(norm)
 
 energy_fn = polytensor.DensePolynomial(terms)
 
