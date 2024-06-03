@@ -12,8 +12,7 @@ from Energy_Encoder_Classes import BVAE, CorrelationalLoss, LabeledDataset, Mode
 from Energy_Encoder_Modules import calc_norm
 
 num_MCMC_iterations = 0
-temperature = 0.1
-resume_from_checkpoint = False
+resume_from_checkpoint = True
 num_devices = 2
 num_nodes = 2
 num_workers = 1
@@ -25,13 +24,14 @@ norm_weight = 10
 h_dim = 128
 batch_size = 100
 num_vars = 64
+order = 3
+temperature=0
 model_type = Model_Type.QUBO
 
 ###############################################################
 
 num_vars = 64
 
-# num_per_degree = [num_vars, num_vars * (num_vars - 1) // 2]
 num_per_degree = [
     num_vars,
     num_vars * (num_vars - 1) // 2,
@@ -70,15 +70,14 @@ bvae = BVAE(
     batch_size=batch_size,
 )
 
-temperature_str = str(temperature).replace(".", ",")
 model_type_str = bvae.model_type
 
-experiment_name = f"{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}"
+experiment_name = f"{model_type_str}_order_{order}"
 
 checkpoint_path = ""
 if resume_from_checkpoint:
     checkpoint_path1 = (
-        f"./logs/{model_type_str}_{num_MCMC_iterations}_MCMC_temp_{temperature_str}/"
+        f"./logs/{model_type_str}_order_{order}/"
     )
     checkpoint_path2 = os.listdir(checkpoint_path1)[-1]
     checkpoint_path = os.path.join(checkpoint_path1, checkpoint_path2)
