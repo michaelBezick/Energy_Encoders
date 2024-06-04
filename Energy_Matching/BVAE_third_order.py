@@ -14,7 +14,7 @@ from Energy_Encoder_Modules import calc_norm
 num_MCMC_iterations = 0
 resume_from_checkpoint = False
 num_devices = 2
-num_nodes = 2
+num_nodes = 4
 num_workers = 1
 epochs = 10_000
 reconstruction_weight = 0.6
