@@ -1,8 +1,8 @@
 import os
 
 import numpy as np
-# import polytensor.polytensor as polytensor
-import polytensor
+import polytensor.polytensor as polytensor
+#import polytensor
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
