@@ -1,7 +1,8 @@
 import os
 
 import numpy as np
-import polytensor.polytensor as polytensor
+# import polytensor.polytensor as polytensor
+import polytensor as polytensor
 #import polytensor
 import pytorch_lightning as pl
 import torch
@@ -99,6 +100,8 @@ if resume_from_checkpoint:
     checkpoint_path = checkpoint_path + "/checkpoints/"
     file_checkpoint = os.listdir(checkpoint_path)[0]
     checkpoint_path = os.path.join(checkpoint_path, file_checkpoint)
+    print(checkpoint_path)
+    exit()
 
 checkpoint_callback = ModelCheckpoint(filename="good", every_n_train_steps=300)
 
