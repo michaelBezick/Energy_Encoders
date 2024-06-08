@@ -2,7 +2,6 @@ import os
 
 import numpy as np
 import polytensor.polytensor as polytensor
-#import polytensor
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
@@ -16,7 +15,7 @@ num_MCMC_iterations = 0
 temperature = 0.1
 resume_from_checkpoint = True
 num_devices = 2
-num_nodes = 2
+num_nodes = 4
 num_workers = 1
 epochs = 4_500
 reconstruction_weight = 0.6
