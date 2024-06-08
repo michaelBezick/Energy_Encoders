@@ -320,6 +320,8 @@ class CorrelationalLoss:
         self.average_energy = 0
         self.slope = 0
 
+        self.epsilon = 1e-10
+
     def __call__(self, x_FOM, y_Energy):
         pearson_correlation_coefficient = self.compute_pearson_correlation(
             x_FOM, y_Energy
@@ -332,7 +334,7 @@ class CorrelationalLoss:
         self.slope = slope
 
         x = pearson_correlation_coefficient
-        correlation_loss = torch.log((0.5 * (x + 1)) / (1 - 0.5 * (x + 1)))
+        correlation_loss = torch.log((0.5 * (x + 1)) / (1 - 0.5 * (x + 1)) + self.epsilon)
 
         average_energy_loss = average_energy
 
