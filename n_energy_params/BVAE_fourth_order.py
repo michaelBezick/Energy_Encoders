@@ -48,6 +48,8 @@ num_per_degree = [
     20_000, #max 635,376
 ]
 
+num_per_degree = [num_vars]
+
 
 sample_fn = lambda: torch.randn(1, device="cuda")
 
@@ -58,10 +60,9 @@ terms = polytensor.generators.coeffPUBORandomSampler(
 
 
 terms = polytensor.generators.denseFromSparse(terms, num_vars)
-
-
-#test for fourth degree
-#terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
+terms.append(torch.randn(num_vars, num_vars))
+terms.append(torch.randn(num_vars, num_vars, num_vars))
+terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
 
 norm = calc_norm(terms)
 print(norm)

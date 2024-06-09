@@ -33,17 +33,19 @@ model_type = Model_Type.QUBO
 num_vars = 64
 #terms to distribute: 2080
 
-num_per_degree = [
-    num_vars, #max 64
-    num_vars * (num_vars - 1) // 2, #max 2016
-    num_vars * (num_vars - 1) * (num_vars - 2) // 6, #max 41,664
-]
+# num_per_degree = [
+#     num_vars, #max 64
+#     num_vars * (num_vars - 1) // 2, #max 2016
+#     num_vars * (num_vars - 1) * (num_vars - 2) // 6, #max 41,664
+# ]
 
-num_per_degree = [
-    64, #max 64
-    2016, #max 2016
-    10_000, #max 41,664
-]
+num_per_degree = [num_vars]
+
+# num_per_degree = [
+#     64, #max 64
+#     2016, #max 2016
+#     10_000, #max 41,664
+# ]
 
 sample_fn = lambda: torch.randn(1, device="cuda")
 terms = polytensor.generators.coeffPUBORandomSampler(
@@ -51,6 +53,8 @@ terms = polytensor.generators.coeffPUBORandomSampler(
 )
 
 terms = polytensor.generators.denseFromSparse(terms, num_vars)
+terms.append(torch.randn(num_vars, num_vars))
+terms.append(torch.randn(num_vars, num_vars, num_vars))
 norm = calc_norm(terms)
 terms[0] = terms[0] / norm
 terms[1] = terms[1] / norm
