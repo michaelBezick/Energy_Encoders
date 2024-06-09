@@ -334,7 +334,7 @@ class CorrelationalLoss:
         self.slope = slope
 
         x = pearson_correlation_coefficient
-        correlation_loss = torch.log((0.5 * (x + 1)) / (1 - 0.5 * (x + 1)) + self.epsilon)
+        correlation_loss = torch.log((0.5 * (x + 1)) / (1 - 0.5 * (x + 1)))
 
         average_energy_loss = average_energy
 
@@ -381,20 +381,20 @@ class CorrelationalLoss:
         x_deviation_from_mean = x_FOM - x_mean
         y_deviation_from_mean = y_Energy - y_mean
 
-        covariance = torch.einsum("i,i->", x_deviation_from_mean, y_deviation_from_mean)
+        covariance = torch.einsum("i,i->", x_deviation_from_mean, y_deviation_from_mean) + self.epsilon
 
         if covariance == 0:
             print("COVARIANCE 0")
             exit()
 
         std_dev_x = torch.sqrt(
-            torch.einsum("i,i->", x_deviation_from_mean, x_deviation_from_mean)
+            torch.einsum("i,i->", x_deviation_from_mean, x_deviation_from_mean) + self.epsilon
         )
         if std_dev_x == 0:
             print("std_dev_x 0")
             exit()
         std_dev_y = torch.sqrt(
-            torch.einsum("i,i->", y_deviation_from_mean, y_deviation_from_mean)
+            torch.einsum("i,i->", y_deviation_from_mean, y_deviation_from_mean) + self.epsilon
         )
         if std_dev_y == 0:
             print("std_dev_y 0")

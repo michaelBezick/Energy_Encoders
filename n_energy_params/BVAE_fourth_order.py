@@ -1,9 +1,7 @@
 import os
 
 import numpy as np
-# import polytensor.polytensor as polytensor
 import polytensor.polytensor as polytensor
-#import polytensor
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
@@ -63,7 +61,7 @@ terms = polytensor.generators.denseFromSparse(terms, num_vars)
 
 
 #test for fourth degree
-terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
+#terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
 
 norm = calc_norm(terms)
 print(norm)
