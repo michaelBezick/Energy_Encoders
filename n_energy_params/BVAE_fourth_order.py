@@ -13,11 +13,11 @@ from Energy_Encoder_Modules import calc_norm
 
 num_MCMC_iterations = 0
 temperature = 0.1
-resume_from_checkpoint = False
+resume_from_checkpoint = True
 num_devices = 3
 num_nodes = 4
 num_workers = 1
-epochs = 4_500
+epochs = 5000
 reconstruction_weight = 0.6
 perceptual_weight = 0.025
 energy_weight = 1e-3

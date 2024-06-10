@@ -11,11 +11,11 @@ import pytorch_lightning as pl
 
 num_MCMC_iterations = 0
 temperature = 0.1
-resume_from_checkpoint = False
+resume_from_checkpoint = True
 num_devices = 3 #changed
 num_nodes = 4 #changed
 num_workers = 1
-epochs = 4_500
+epochs = 5000
 reconstruction_weight = 0.6
 perceptual_weight = 0.025
 energy_weight = 1e-3
@@ -46,7 +46,7 @@ energy_fn = polytensor.DensePolynomial(terms)
 
 energy_loss_fn = CorrelationalLoss(10., 0.01, 0.)
 
-bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, energy_weight=energy_weight, norm_weight=norm_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature, batch_size=batch_size)
+bvae = BVAE(energy_fn, energy_loss_fn, model_type=model_type, reconstruction_weight=reconstruction_weight, perceptual_weight=perceptual_weight, energy_weight=energy_weight, norm_weight=norm_weight, h_dim=h_dim, latent_vector_dim=num_vars, num_MCMC_iterations=num_MCMC_iterations, temperature=temperature, batch_size=batch_size, energy_fn_lr=1e-3)
 
 temperature_str = str(temperature).replace('.', ',')
 model_type_str = bvae.model_type

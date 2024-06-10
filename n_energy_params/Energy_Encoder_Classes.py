@@ -52,9 +52,11 @@ class BVAE(pl.LightningModule):
         num_MCMC_iterations=3,
         temperature=0.1,
         latent_vector_dim=64,
+        energy_fn_lr=1e-4
     ):
         super().__init__()
 
+        self.energy_fn_lr = energy_fn_lr
         self.sampler = torch.multinomial
         self.shift = 0
         if model_type == Model_Type.QUBO:
@@ -268,7 +270,7 @@ class BVAE(pl.LightningModule):
         # scheduler_vae = optim.lr_scheduler.LambdaLR(
         #     optimizer=opt_VAE, lr_lambda=lambda epoch: self.warmup_lr_schedule(epoch)
         # )
-        opt_energy_fn = torch.optim.Adam(self.energy_fn.parameters(), lr=self.lr)
+        opt_energy_fn = torch.optim.Adam(self.energy_fn.parameters(), lr=self.energy_fn_lr)
         # scheduler_energy_fn = optim.lr_scheduler.LambdaLR(
         #     optimizer=opt_energy_fn,
         #     lr_lambda=lambda epoch: self.warmup_lr_schedule(epoch),
