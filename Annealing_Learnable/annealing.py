@@ -1,8 +1,8 @@
 import time
 
 import matplotlib.pyplot as plt
-import torch
 import polytensor
+import torch
 
 from annealing_classes import RNN, RNN_Concat, RNN_Tensorized, Variational_Free_Energy
 from Energy_Encoder_Classes import BVAE
@@ -38,20 +38,25 @@ terms.append(torch.randn(num_vars, num_vars))
 energy_fn = polytensor.DensePolynomial(terms)
 
 second_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-second_degree_model.load_state_dict(torch.load("./Models/QUBO_order_2/epoch=4999-step=100000.ckpt")['state_dict'])
-
+second_degree_model.load_state_dict(
+    torch.load("./Models/QUBO_order_2/epoch=9999-step=200000.ckpt")["state_dict"]
+)
 terms.append(torch.randn(num_vars, num_vars, num_vars))
 
 energy_fn = polytensor.DensePolynomial(terms)
 
 third_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-third_degree_model.load_state_dict(torch.load("./Models/QUBO_order_3/epoch=4999-step=100000.ckpt")['state_dict'])
+third_degree_model.load_state_dict(
+    torch.load("./Models/QUBO_order_3/epoch=9999-step=200000.ckpt")["state_dict"]
+)
 
 terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
 energy_fn = polytensor.DensePolynomial(terms)
 
 fourth_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-fourth_degree_model.load_state_dict(torch.load("./Models/QUBO_order_4/epoch=4999-step=100000.ckpt")['state_dict'])
+fourth_degree_model.load_state_dict(
+    torch.load("./Models/QUBO_order_4/epoch=9999-step=200000.ckpt")["state_dict"]
+)
 
 
 model_list = [second_degree_model, third_degree_model, fourth_degree_model]

@@ -21,7 +21,7 @@ from Functions import (
 )
 
 device = "cuda"
-save_images = False
+save_images = True
 normalize = False
 
 clamp, threshold = threshold()
@@ -40,20 +40,20 @@ terms.append(torch.randn(num_vars, num_vars))
 energy_fn = polytensor.DensePolynomial(terms)
 
 second_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-second_degree_model.load_state_dict(torch.load("../Annealing_Learnable/Models/QUBO_order_2/epoch=4999-step=100000.ckpt")['state_dict'])
+second_degree_model.load_state_dict(torch.load("../Annealing_Learnable/Models/QUBO_order_2/epoch=9999-step=200000.ckpt")['state_dict'])
 
 terms.append(torch.randn(num_vars, num_vars, num_vars))
 
 energy_fn = polytensor.DensePolynomial(terms)
 
 third_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-third_degree_model.load_state_dict(torch.load("../Annealing_Learnable/Models/QUBO_order_3/epoch=4999-step=100000.ckpt")['state_dict'])
+third_degree_model.load_state_dict(torch.load("../Annealing_Learnable/Models/QUBO_order_3/epoch=9999-step=200000.ckpt")['state_dict'])
 
 terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
 energy_fn = polytensor.DensePolynomial(terms)
 
 fourth_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-fourth_degree_model.load_state_dict(torch.load("../Annealing_Learnable/Models/QUBO_order_4/epoch=4999-step=100000.ckpt")['state_dict'])
+fourth_degree_model.load_state_dict(torch.load("../Annealing_Learnable/Models/QUBO_order_4/epoch=9999-step=200000.ckpt")['state_dict'])
 
 
 model_list = [second_degree_model, third_degree_model, fourth_degree_model]
@@ -121,6 +121,7 @@ for model_dir in tqdm(model_dir_list):
     zero_tensor = torch.zeros([100, 64])
     FOM_measurements = []
     largest_FOM = 0
+    been_saved = False
 
     with torch.no_grad():
         for iters in range(num_iters):
@@ -155,8 +156,10 @@ for model_dir in tqdm(model_dir_list):
 
             log_dir = folder_path
 
-            if save_images:
-                save_image(grid, log_dir)
+            if save_images and been_saved == False:
+                print(log_dir)
+                save_image(grid, log_dir + "image.jpg")
+                been_saved = True
 
         FOM_measurements = np.array(FOM_measurements)
         average = np.mean(FOM_measurements)
