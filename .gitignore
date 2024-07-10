@@ -5,3 +5,4 @@ slurm*
 test*
 Test
 *.ckpt
+*.pt

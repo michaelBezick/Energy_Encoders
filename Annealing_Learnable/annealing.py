@@ -4,8 +4,14 @@ import matplotlib.pyplot as plt
 import polytensor
 import torch
 
-from annealing_classes import RNN, RNN_Concat, RNN_Tensorized, Variational_Free_Energy
-from Energy_Encoder_Classes import BVAE
+from annealing_classes import (
+    RNN,
+    RNN_Batch_Norm,
+    RNN_Concat,
+    RNN_Tensorized,
+    Variational_Free_Energy,
+)
+from Energy_Encoder_Classes import BVAE, CorrelationalLoss
 
 device = "cuda"
 epochs = 1000
@@ -16,14 +22,16 @@ temperature = 1
 N_gradient_descent = 1
 N_samples = 50
 log_step_size = 10
-min_energy_repeat_threshold = 600
+min_energy_repeat_threshold = 100
 vector_length = 64
 num_vector_samples = 30
 
 print_vector = False
 plot = True
 save_vectors = True
+RNN_type = "Simple_RNN"
 ##################################################
+energy_loss_fn = CorrelationalLoss(1, 1, 1)
 num_vars = 64
 
 num_per_degree = [num_vars]
@@ -37,27 +45,32 @@ terms.append(torch.randn(num_vars, num_vars))
 
 energy_fn = polytensor.DensePolynomial(terms)
 
-second_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-second_degree_model.load_state_dict(
-    torch.load("./Models/QUBO_order_2/epoch=9999-step=200000.ckpt")["state_dict"]
+second_degree_model = BVAE.load_from_checkpoint(
+    "./Models/QUBO_order_2/epoch=9999-step=200000.ckpt",
+    energy_fn=energy_fn,
+    energy_loss_fn=energy_loss_fn,
+    h_dim=128,
 )
 terms.append(torch.randn(num_vars, num_vars, num_vars))
 
 energy_fn = polytensor.DensePolynomial(terms)
 
-third_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-third_degree_model.load_state_dict(
-    torch.load("./Models/QUBO_order_3/epoch=9999-step=200000.ckpt")["state_dict"]
+third_degree_model = BVAE.load_from_checkpoint(
+    "./Models/QUBO_order_3/epoch=9999-step=200000.ckpt",
+    energy_fn=energy_fn,
+    energy_loss_fn=energy_loss_fn,
+    h_dim=128,
 )
 
 terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
 energy_fn = polytensor.DensePolynomial(terms)
 
-fourth_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-fourth_degree_model.load_state_dict(
-    torch.load("./Models/QUBO_order_4/epoch=9999-step=200000.ckpt")["state_dict"]
+fourth_degree_model = BVAE.load_from_checkpoint(
+    "./Models/QUBO_order_4/epoch=9999-step=200000.ckpt",
+    energy_fn=energy_fn,
+    energy_loss_fn=energy_loss_fn,
+    h_dim=128,
 )
-
 
 model_list = [second_degree_model, third_degree_model, fourth_degree_model]
 
@@ -67,7 +80,7 @@ for experiment_number, model in enumerate(model_list):
         model.energy_fn, N_samples=N_samples, batch_size=batch_size
     )
     energy_loss = energy_loss.to(device)
-    rnn = RNN_Tensorized().to(device)
+    rnn = RNN().to(device)
 
     optimizer = torch.optim.Adam(params=rnn.parameters(), lr=lr)
 
@@ -173,7 +186,7 @@ for experiment_number, model in enumerate(model_list):
     sigma = torch.tensor(unique_vector_list)
     print(sigma.size())
     if save_vectors:
-        torch.save(sigma, save_dir + "neural_annealing_vectors.pt")
+        torch.save(sigma, save_dir + RNN_type + "neural_annealing_vectors.pt")
 
     if plot:
         total_steps = epoch + warmup_steps
@@ -194,4 +207,4 @@ for experiment_number, model in enumerate(model_list):
 
         plt.legend()
 
-        plt.savefig(save_dir + "Average_Energy_Plot.png")
+        plt.savefig(save_dir + RNN_type + "Average_Energy_Plot.png")

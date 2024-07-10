@@ -22,9 +22,9 @@ from Functions import (
 
 device = "cuda"
 save_images = True
-normalize = False
 
-clamp, threshold = threshold()
+clamp = True
+threshold = 0.5
 
 num_vars = 64
 
@@ -34,26 +34,25 @@ terms = polytensor.generators.coeffPUBORandomSampler(
     n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
 )
 
+energy_loss_fn = CorrelationalLoss()
+
 terms = polytensor.generators.denseFromSparse(terms, num_vars)
 terms.append(torch.randn(num_vars, num_vars))
 
 energy_fn = polytensor.DensePolynomial(terms)
 
-second_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-second_degree_model.load_state_dict(torch.load("../Annealing_Learnable/Models/QUBO_order_2/epoch=9999-step=200000.ckpt")['state_dict'])
+second_degree_model = BVAE.load_from_checkpoint("../Annealing_Learnable/Models/QUBO_order_2/epoch=9999-step=200000.ckpt", energy_fn=energy_fn, energy_loss_fn=energy_loss_fn, h_dim=128)
 
 terms.append(torch.randn(num_vars, num_vars, num_vars))
 
 energy_fn = polytensor.DensePolynomial(terms)
 
-third_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-third_degree_model.load_state_dict(torch.load("../Annealing_Learnable/Models/QUBO_order_3/epoch=9999-step=200000.ckpt")['state_dict'])
+third_degree_model = BVAE.load_from_checkpoint("../Annealing_Learnable/Models/QUBO_order_3/epoch=9999-step=200000.ckpt", energy_fn=energy_fn, energy_loss_fn=energy_loss_fn, h_dim=128)
 
 terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
 energy_fn = polytensor.DensePolynomial(terms)
 
-fourth_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-fourth_degree_model.load_state_dict(torch.load("../Annealing_Learnable/Models/QUBO_order_4/epoch=9999-step=200000.ckpt")['state_dict'])
+fourth_degree_model = BVAE.load_from_checkpoint("../Annealing_Learnable/Models/QUBO_order_4/epoch=9999-step=200000.ckpt", energy_fn=energy_fn, energy_loss_fn=energy_loss_fn, h_dim=128)
 
 
 model_list = [second_degree_model, third_degree_model, fourth_degree_model]
@@ -136,9 +135,6 @@ for model_dir in tqdm(model_dir_list):
             output = model.vae.decode(vectors)
             output_expanded = expand_output(output)
 
-            if normalize:
-                output_expanded = mean_normalize(output_expanded)
-
             if clamp:
                 output_expanded = clamp_output(output_expanded, threshold)
 
@@ -156,8 +152,9 @@ for model_dir in tqdm(model_dir_list):
 
             log_dir = folder_path
 
-            if save_images and been_saved == False:
+            if save_images and been_saved == False and iters == num_iters - 1:
                 print(log_dir)
+                print("SAVED IMAGE")
                 save_image(grid, log_dir + "image.jpg")
                 been_saved = True
 
