@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from Energy_Encoder_Classes import CorrelationalLoss, BVAE
 import polytensor
-from convert_to_KID_format import convert_to_KID_and_save
+# from convert_to_KID_format import convert_to_KID_and_save
 
 num_images_to_save = 20_000
 
@@ -33,7 +33,7 @@ def load_FOM_model(model_path, weights_path):
 
 dataset_2nd = torch.load("../Annealing_Matching/Models/QUBO_order_2/neural_annealing_vectors.pt")
 dataset_3rd = torch.load("../Annealing_Matching/Models/QUBO_order_3/neural_annealing_vectors.pt")
-dataset_4th = torch.load("../Annealing_Matching/Models/QUBO_order_4/neural_annealing_vectors.pt")
+# dataset_4th = torch.load("../Annealing_Matching/Models/QUBO_order_4/neural_annealing_vectors.pt")
 
 energy_loss_fn = CorrelationalLoss(1, 1, 1)
 num_vars = 64
@@ -50,7 +50,7 @@ terms.append(torch.randn(num_vars, num_vars))
 energy_fn = polytensor.DensePolynomial(terms)
 
 second_degree_model = BVAE.load_from_checkpoint(
-    "../Annealing_Learnable/Models/QUBO_order_2/epoch=9999-step=200000.ckpt",
+    "../Annealing_Matching/Models/QUBO_order_2/epoch=9999-step=200000.ckpt",
     energy_fn=energy_fn,
     energy_loss_fn=energy_loss_fn,
     h_dim=128,
@@ -60,7 +60,7 @@ terms.append(torch.randn(num_vars, num_vars, num_vars))
 energy_fn = polytensor.DensePolynomial(terms)
 
 third_degree_model = BVAE.load_from_checkpoint(
-    "../Annealing_Learnable/Models/QUBO_order_3/epoch=9999-step=200000.ckpt",
+    "../Annealing_Matching/Models/QUBO_order_3/epoch=9999-step=200000.ckpt",
     energy_fn=energy_fn,
     energy_loss_fn=energy_loss_fn,
     h_dim=128,
@@ -69,14 +69,14 @@ third_degree_model = BVAE.load_from_checkpoint(
 terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
 energy_fn = polytensor.DensePolynomial(terms)
 
-fourth_degree_model = BVAE.load_from_checkpoint(
-    "../Annealing_Learnable/Models/QUBO_order_4/epoch=9999-step=200000.ckpt",
-    energy_fn=energy_fn,
-    energy_loss_fn=energy_loss_fn,
-    h_dim=128,
-)
+# fourth_degree_model = BVAE.load_from_checkpoint(
+#     "../Annealing_Learnable/Models/QUBO_order_4/epoch=9999-step=200000.ckpt",
+#     energy_fn=energy_fn,
+#     energy_loss_fn=energy_loss_fn,
+#     h_dim=128,
+# )
 
-model_list = [second_degree_model, third_degree_model, fourth_degree_model]
+model_list = [second_degree_model, third_degree_model]
 
 
 batch_size = 100
@@ -95,16 +95,16 @@ train_loader_3rd = DataLoader(
     drop_last=False,
 )
 
-train_loader_4th = DataLoader(
-    dataset_4th,
-    batch_size=batch_size,
-    shuffle=False,
-    drop_last=False,
-)
+# train_loader_4th = DataLoader(
+#     dataset_4th,
+#     batch_size=batch_size,
+#     shuffle=False,
+#     drop_last=False,
+# )
 FOM_calculator = load_FOM_model("../Files/VGGnet.json", "../Files/VGGnet_weights.h5")
 
 iteration_num = 1
-for train_loader, model in [(train_loader_2nd, second_degree_model), (train_loader_3rd, third_degree_model), (train_loader_4th, fourth_degree_model)]:
+for train_loader, model in [(train_loader_2nd, second_degree_model), (train_loader_3rd, third_degree_model)]:
 
     FOM_measurements = []
     best_images_tuple_list = []
@@ -121,7 +121,9 @@ for train_loader, model in [(train_loader_2nd, second_degree_model), (train_load
         degree = "4th"
 
     model = model.cuda()
-    for vectors in tqdm(train_loader):
+    for i, vectors in enumerate(tqdm(train_loader)):
+        if i > 300:
+            break
 
         vectors = vectors.cuda()
         images = model.vae.decode(vectors)
@@ -145,5 +147,5 @@ for train_loader, model in [(train_loader_2nd, second_degree_model), (train_load
     for i in range(num_images_to_save):
         best_images[i, :, :, :] = best_images_tuple_list.pop()[1]
 
-    convert_to_KID_and_save(best_images, f"dataset_{degree}_degree.npy")
-    # torch.save(best_images, f"dataset_{degree}_degree.pt")
+    # convert_to_KID_and_save(best_images, f"dataset_{degree}_degree.npy")
+    torch.save(best_images, f"dataset_{degree}_degree.pt")
