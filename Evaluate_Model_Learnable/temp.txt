@@ -1,0 +1,5 @@
+To compute the FID or KID score between two datasets with features extracted from inception net:
+
+* Ensure that you have saved both datasets as numpy files (`.npy`) in channels-first format, i.e. `(no. of images, channels, height, width)`
+
+
