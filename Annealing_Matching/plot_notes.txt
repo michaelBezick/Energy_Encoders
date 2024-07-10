@@ -1,0 +1,2 @@
+Second_degree_pearson: -0.6660423278808594
+Third_degree_pearson: -0.19985944032669067

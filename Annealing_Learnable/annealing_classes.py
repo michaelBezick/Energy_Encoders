@@ -254,6 +254,62 @@ class RNN_Tensorized(nn.Module):
         return sigma_hat_list
 
 
+class RNN_Batch_Norm(nn.Module):
+    def __init__(
+        self,
+        batch_size=100,
+        hidden_dim=64,
+        vector_length=64,
+        device="cuda",
+        sigma_dim=2,
+    ):
+        super().__init__()
+        self.batch_size = batch_size
+        self.vector_length = vector_length
+        self.full_dim = hidden_dim + 2
+        self.hidden_dim = hidden_dim
+        self.device = device
+        self.activation_function = nn.ELU()
+
+        self.hidden_weights = nn.ParameterList(
+            [nn.Linear(self.full_dim, hidden_dim) for _ in range(vector_length)]
+        )
+        self.softmax_weights = nn.ParameterList(
+            [nn.Linear(hidden_dim, 2) for _ in range(vector_length)]
+        )
+        self.softmax = nn.Softmax(dim=1)
+        self.batch_norm_layers = nn.ParameterList(
+            [nn.BatchNorm1d(hidden_dim) for _ in range(vector_length)]
+        )
+
+    def forward(self, sigma_list: torch.FloatTensor):
+        sigma_hat_list = torch.zeros(
+            (self.batch_size, self.vector_length), device=self.device
+        )
+        hidden_state = torch.zeros(
+            (self.batch_size, self.hidden_dim), device=self.device
+        )
+        for i in range(self.vector_length):
+            if i == 0:
+                # Null input to model
+                sigma = torch.zeros((self.batch_size, 2), device=self.device)
+            else:
+                sigma = F.one_hot(sigma_list[:, i - 1].type(torch.int64), 2)
+
+            concatenated_input = torch.cat([hidden_state, sigma], dim=1)
+
+            state = self.hidden_weights[i](concatenated_input)
+            state = self.batch_norm_layers[i](state)
+            hidden_state = self.activation_function(state)
+
+            sigma_hat = self.softmax(self.softmax_weights[i](hidden_state))[
+                :, 1
+            ]  # retrieves the probability of 1
+            sigma_hat_list[:, i] = sigma_hat
+
+        return sigma_hat_list
+
+
 class RNN(nn.Module):
     def __init__(
         self,

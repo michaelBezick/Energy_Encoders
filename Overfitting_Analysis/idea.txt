@@ -1,0 +1,3 @@
+Need to examine if correlational loss reduces overfitting compared to energy matching.
+One idea is to generate vectors at random, and see if pearson correlation coefficient is maintained
+Or I could compare the Frechet inception distance between both. This probably makes the most sense.
