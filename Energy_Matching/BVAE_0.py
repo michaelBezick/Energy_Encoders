@@ -11,11 +11,11 @@ import pytorch_lightning as pl
 
 num_MCMC_iterations = 0
 temperature = 0.1
-resume_from_checkpoint = False
+resume_from_checkpoint = True
 num_devices = 3 #changed
 num_nodes = 4 #changed
 num_workers = 1
-epochs = 4_500
+epochs = 10_000
 reconstruction_weight = 0.6
 perceptual_weight = 0.025
 energy_weight = 1e-3
