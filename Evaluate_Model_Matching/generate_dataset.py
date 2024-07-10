@@ -31,9 +31,9 @@ def load_FOM_model(model_path, weights_path):
 
     return FOM_calculator
 
-dataset_2nd = torch.load("../Annealing_Learnable/Models/QUBO_order_2/neural_annealing_vectors.pt")
-dataset_3rd = torch.load("../Annealing_Learnable/Models/QUBO_order_3/neural_annealing_vectors.pt")
-dataset_4th = torch.load("../Annealing_Learnable/Models/QUBO_order_4/neural_annealing_vectors.pt")
+dataset_2nd = torch.load("../Annealing_Matching/Models/QUBO_order_2/neural_annealing_vectors.pt")
+dataset_3rd = torch.load("../Annealing_Matching/Models/QUBO_order_3/neural_annealing_vectors.pt")
+dataset_4th = torch.load("../Annealing_Matching/Models/QUBO_order_4/neural_annealing_vectors.pt")
 
 energy_loss_fn = CorrelationalLoss(1, 1, 1)
 num_vars = 64
