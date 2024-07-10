@@ -1,7 +1,6 @@
 import torch
 from bitarray import bitarray
 
-
 def expand_output(tensor: torch.Tensor):
     x = torch.zeros([100, 1, 64, 64])
     x[:, :, 0:32, 0:32] = tensor
