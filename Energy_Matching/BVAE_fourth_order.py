@@ -41,6 +41,7 @@ num_per_degree = [
     num_vars * (num_vars - 1) * (num_vars - 2) * (num_vars - 3) // 24, #max 635,376
 ]
 
+num_per_degree = [num_vars]
 
 sample_fn = lambda: torch.randn(1, device="cuda")
 
