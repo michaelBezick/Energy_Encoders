@@ -92,7 +92,7 @@ experiment_name = f"{model_type_str}_order_{order}"
 checkpoint_path = ""
 if resume_from_checkpoint:
     checkpoint_path1 = (
-        f"./logs/{model_type_str}_order_{order}/"
+        f"./logs/{model_type_str}_order_{order}"
     )
     checkpoint_path2 = os.listdir(checkpoint_path1)
     newest_version = ""
