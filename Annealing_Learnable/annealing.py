@@ -10,6 +10,7 @@ from annealing_classes import (
     RNN_Concat,
     RNN_Tensorized,
     Variational_Free_Energy,
+    Variational_Free_Energy_modified_for_specific_value
 )
 from Energy_Encoder_Classes import BVAE, CorrelationalLoss
 
@@ -22,7 +23,7 @@ temperature = 1
 N_gradient_descent = 1
 N_samples = 50
 log_step_size = 10
-min_energy_repeat_threshold = 100
+min_energy_repeat_threshold = 100000
 vector_length = 64
 num_vector_samples = 30
 
@@ -75,10 +76,17 @@ fourth_degree_model = BVAE.load_from_checkpoint(
 model_list = [second_degree_model, third_degree_model, fourth_degree_model]
 
 for experiment_number, model in enumerate(model_list):
+    if experiment_number != 2:
+        continue
     model = model.to(device)
     energy_loss = Variational_Free_Energy(
         model.energy_fn, N_samples=N_samples, batch_size=batch_size
     )
+
+    """ADDED"""
+    energy_loss = Variational_Free_Energy_modified_for_specific_value(model.energy_fn, N_samples=N_samples, batch_size=batch_size)
+    """"""
+
     energy_loss = energy_loss.to(device)
     rnn = RNN().to(device)
 
@@ -153,9 +161,13 @@ for experiment_number, model in enumerate(model_list):
         if min_energy_repeats > min_energy_repeat_threshold:
             break
 
+        if len(unique_vector_list) > 10_000:
+            break
+
         if epoch % log_step_size == 0:
             print(f"Epoch: {epoch}")
             print(f"Min Energy: {min_energy}")
+            print(f"Average Energy: {torch.mean(model.energy_fn(sigma))}")
             print(f"Loss: {loss}")
             if print_vector:
                 print(f"{best_vector}")

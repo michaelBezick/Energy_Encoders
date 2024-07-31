@@ -1,1 +1,1 @@
-Experiment max FOM: 1.7204475402832031
+Experiment max FOM: 1.2741758823394775

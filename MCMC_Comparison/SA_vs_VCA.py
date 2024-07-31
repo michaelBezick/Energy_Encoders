@@ -19,12 +19,12 @@ from Energy_Encoder_Classes import BVAE, CorrelationalLoss
 """Self referential doesn't work"""
 
 device = "cuda"
-epochs = 200
+epochs = 300
 lr = 5e-4
 batch_size = 100
 warmup_steps = 0
 temperature = 1
-N_gradient_descent = 1
+N_gradient_descent = 10
 N_samples = 50
 log_step_size = 10
 min_energy_repeat_threshold = 1000000

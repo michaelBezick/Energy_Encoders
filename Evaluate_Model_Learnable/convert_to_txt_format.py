@@ -14,7 +14,7 @@ def convert(dataset, filename, num_images):
         with open(f"./{filename}/{i}.txt", "w") as file:
             file.write("64 -0.14 0.14\n")
             file.write("64 -0.14 0.14\n")
-            file.write("2 0 0.1\n")
+            file.write("2 0 0.12\n")
             for pixel in image:
                 if pixel.item() == 0:
                     file.write("0\n")

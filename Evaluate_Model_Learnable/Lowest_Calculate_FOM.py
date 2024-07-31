@@ -102,13 +102,17 @@ for model_dir in model_dir_list:
     new_list = []
     for vector in tqdm(optimal_vector_list):
         energy = model.energy_fn(vector)
+        if degree == 4:
+            energy = abs(energy - (-260))
         new_list.append((energy, vector))
 
     sorted_new_list = sorted(new_list, key=lambda x: x[0])
     # sorted in increasing order, want first vectors
     cut_off_new_tuple_list = sorted_new_list[0:lowest_num]
+
     cut_off_new_list = [x[1] for x in cut_off_new_tuple_list]
     new_optimal_vectors.append(torch.stack(cut_off_new_list))
+    
 
 optimal_vectors = new_optimal_vectors
 
@@ -130,11 +134,15 @@ for model_dir in tqdm(model_dir_list):
         folder_path = "./Models/2nd_degree/"
         degree = 3
         model = model_list[0]
+        """ADDED"""
+        continue
     elif degree == 3:
         optimal_vector_list = optimal_vectors[1]
         folder_path = "./Models/3rd_degree/"
         degree = 4
         model = model_list[1]
+        """ADDED"""
+        continue
     else:
         optimal_vector_list = optimal_vectors[2]
         folder_path = "./Models/4th_degree/"

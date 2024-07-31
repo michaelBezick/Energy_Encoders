@@ -57,13 +57,13 @@ def compute_pearson_correlation(x_FOM, y_Energy):
 
 def get_annealing_vectors():
     second = torch.load(
-        "../Annealing_Learnable/Models/QUBO_order_2/neural_annealing_vectors.pt"
+        "../Annealing_Learnable/Models/QUBO_order_2/Simple_RNNneural_annealing_vectors.pt"
     )
     third = torch.load(
-        "../Annealing_Learnable/Models/QUBO_order_3/neural_annealing_vectors.pt"
+        "../Annealing_Learnable/Models/QUBO_order_3/Simple_RNNneural_annealing_vectors.pt"
     )
     fourth = torch.load(
-        "../Annealing_Learnable/Models/QUBO_order_4/neural_annealing_vectors.pt"
+        "../Annealing_Learnable/Models/QUBO_order_4/Simple_RNNneural_annealing_vectors.pt"
     )
 
     return second, third, fourth
