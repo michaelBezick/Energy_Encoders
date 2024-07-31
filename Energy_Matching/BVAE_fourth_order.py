@@ -13,7 +13,7 @@ from Energy_Encoder_Modules import calc_norm
 
 num_MCMC_iterations = 0
 temperature = 0.1
-resume_from_checkpoint = True
+resume_from_checkpoint = False
 num_devices = 3
 num_nodes = 4
 num_workers = 1
