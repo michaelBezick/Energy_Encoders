@@ -97,7 +97,7 @@ experiment_name = f"{model_type_str}_order_{order}_composite"
 checkpoint_path = ""
 if resume_from_checkpoint:
     checkpoint_path1 = (
-        f"./logs/{model_type_str}_order_{order}_composite"
+        f"./logs/{model_type_str}_order_{order}_composite/"
     )
     checkpoint_path2 = os.listdir(checkpoint_path1)
     newest_version = ""
@@ -116,6 +116,7 @@ if resume_from_checkpoint:
 checkpoint_callback = ModelCheckpoint(filename="good", every_n_train_steps=300)
 
 torch.set_float32_matmul_precision("high")
+exit()
 
 
 def clamp_output(tensor: torch.Tensor, threshold):
