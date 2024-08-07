@@ -1,5 +1,3 @@
-import pickle
-
 import matplotlib.pyplot as plt
 import numpy as np
 import polytensor
@@ -16,10 +14,8 @@ from Functions import (
     get_annealing_vectors,
     get_sampling_vars,
     load_FOM_model,
-    load_from_checkpoint,
     threshold,
 )
-
 
 lowest_num = 5000
 device = "cuda"
@@ -38,53 +34,45 @@ terms = polytensor.generators.coeffPUBORandomSampler(
     n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
 )
 
+energy_loss_fn = CorrelationalLoss(1, 1, 1)
+
 terms = polytensor.generators.denseFromSparse(terms, num_vars)
 terms.append(torch.randn(num_vars, num_vars))
 
 energy_fn = polytensor.DensePolynomial(terms)
 
-second_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-second_degree_model.load_state_dict(
-    torch.load("../Annealing_Matching/Models/QUBO_order_2/epoch=9999-step=200000.ckpt")[
-        "state_dict"
-    ]
+second_degree_model = BVAE.load_from_checkpoint(
+    "../Annealing_Matching/Models/QUBO_order_2/epoch=9999-step=200000.ckpt",
+    energy_fn=energy_fn,
+    energy_loss_fn=energy_loss_fn,
+    h_dim=128,
 )
 
 terms.append(torch.randn(num_vars, num_vars, num_vars))
 
 energy_fn = polytensor.DensePolynomial(terms)
 
-third_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-third_degree_model.load_state_dict(
-    torch.load("../Annealing_Matching/Models/QUBO_order_3/epoch=9999-step=200000.ckpt")[
-        "state_dict"
-    ]
+third_degree_model = BVAE.load_from_checkpoint(
+    "../Annealing_Matching/Models/QUBO_order_3/epoch=9999-step=200000.ckpt",
+    energy_fn=energy_fn,
+    energy_loss_fn=energy_loss_fn,
+    h_dim=128,
 )
 
-# terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
-# energy_fn = polytensor.DensePolynomial(terms)
+terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
+energy_fn = polytensor.DensePolynomial(terms)
 
-# fourth_degree_model = BVAE(energy_fn, torch.randn(1), h_dim=128)
-# fourth_degree_model.load_state_dict(torch.load("../Annealing_Learnable/Models/QUBO_order_4/epoch=9999-step=200000.ckpt")['state_dict'])
+fourth_degree_model = BVAE.load_from_checkpoint(
+    "../Annealing_Matching/Models/QUBO_order_4/epoch=9999-step=200000.ckpt",
+    energy_fn=energy_fn,
+    energy_loss_fn=energy_loss_fn,
+    h_dim=128,
+)
 
 
-model_list = [second_degree_model, third_degree_model]
-
-energy_loss_fn = CorrelationalLoss()
-
-FOM_calculator = load_FOM_model("../Files/VGGnet.json", "../Files/VGGnet_weights.h5")
-
-model_dir_list = ["./Models/2nd_degree/", "./Models/3rd_degree/"]
+model_list = [second_degree_model, third_degree_model, fourth_degree_model]
 
 log_dir = ""
-
-"""
-# load QIOTE vectors
-optimal_vectors_list_qiote = None
-with open("optimal_vectors.pkl", "rb") as file:
-    optimal_vector_list_qiote = pickle.load(file)
-
-"""
 
 
 def remove(tensor, index):
@@ -94,6 +82,16 @@ def remove(tensor, index):
 second, third, fourth = get_annealing_vectors()
 optimal_vectors = [second, third, fourth]
 new_optimal_vectors = []
+
+energy_loss_fn = CorrelationalLoss()
+
+FOM_calculator = load_FOM_model("../Files/VGGnet.json", "../Files/VGGnet_weights.h5")
+
+model_dir_list = [
+    "./Models/2nd_degree/",
+    "./Models/3rd_degree/",
+    "./Models/4th_degree/",
+]
 
 degree = 2
 

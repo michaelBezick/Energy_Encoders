@@ -1,2 +1,3 @@
-Second_degree_pearson: -0.6660423278808594
-Third_degree_pearson: -0.19985944032669067
+Second_degree_pearson: -0.6650412082672119
+Third_degree_pearson: -0.2059604823589325
+Fourth degree pearson: 0.010344373062252998

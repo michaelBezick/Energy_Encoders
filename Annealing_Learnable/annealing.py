@@ -10,7 +10,7 @@ from annealing_classes import (
     RNN_Concat,
     RNN_Tensorized,
     Variational_Free_Energy,
-    Variational_Free_Energy_modified_for_specific_value
+    Variational_Free_Energy_modified_for_specific_value,
 )
 from Energy_Encoder_Classes import BVAE, CorrelationalLoss
 
@@ -73,10 +73,17 @@ fourth_degree_model = BVAE.load_from_checkpoint(
     h_dim=128,
 )
 
-model_list = [second_degree_model, third_degree_model, fourth_degree_model]
+composite_model = BVAE.load_from_checkpoint(
+    "./Models/Composite/epoch=9999-step=200000.ckpt",
+    energy_fn=energy_fn,
+    energy_loss_fn=energy_loss_fn,
+    h_dim=128,
+)
+
+model_list = [second_degree_model, third_degree_model, fourth_degree_model, composite_model]
 
 for experiment_number, model in enumerate(model_list):
-    if experiment_number != 2:
+    if experiment_number != 3:
         continue
     model = model.to(device)
     energy_loss = Variational_Free_Energy(
@@ -84,7 +91,9 @@ for experiment_number, model in enumerate(model_list):
     )
 
     """ADDED"""
-    energy_loss = Variational_Free_Energy_modified_for_specific_value(model.energy_fn, N_samples=N_samples, batch_size=batch_size)
+    energy_loss = Variational_Free_Energy_modified_for_specific_value(
+        model.energy_fn, N_samples=N_samples, batch_size=batch_size
+    )
     """"""
 
     energy_loss = energy_loss.to(device)
@@ -190,8 +199,10 @@ for experiment_number, model in enumerate(model_list):
         save_dir = "./Models/QUBO_order_2/"
     elif experiment_number == 1:
         save_dir = "./Models/QUBO_order_3/"
-    else:
+    elif experiment_number == 2:
         save_dir = "./Models/QUBO_order_4/"
+    else:
+        save_dir = "./Models/Composite/"
 
     print(f"Elapsed time: {elapsed_time}")
     print(f"Time per epoch: {time_per_epoch}")

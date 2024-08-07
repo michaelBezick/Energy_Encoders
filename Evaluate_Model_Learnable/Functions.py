@@ -65,8 +65,11 @@ def get_annealing_vectors():
     fourth = torch.load(
         "../Annealing_Learnable/Models/QUBO_order_4/Simple_RNNneural_annealing_vectors.pt"
     )
+    composite = torch.load(
+        "../Annealing_Learnable/Models/Composite/Simple_RNNneural_annealing_vectors.pt"
+    )
 
-    return second, third, fourth
+    return second, third, fourth, composite
 
 
 def load_from_checkpoint(model, model_dir):

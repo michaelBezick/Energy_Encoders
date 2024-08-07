@@ -11,15 +11,15 @@ from Energy_Encoder_Classes import BVAE
 device = "cuda"
 epochs = 1000
 lr = 5e-4
-batch_size = 100
+batch_size = 200
 warmup_steps = 0
 temperature = 1
 N_gradient_descent = 1
 N_samples = 50
 log_step_size = 10
-min_energy_repeat_threshold = 600
+min_energy_repeat_threshold = 100
 vector_length = 64
-num_vector_samples = 30
+num_vector_samples = 200
 
 print_vector = False
 plot = True
@@ -47,16 +47,29 @@ energy_fn = polytensor.DensePolynomial(terms)
 
 third_degree_model = BVAE.load_from_checkpoint("./Models/QUBO_order_3/epoch=9999-step=200000.ckpt", energy_fn=energy_fn, energy_loss_fn=energy_loss_fn, h_dim=128)
 
+terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
 
-model_list = [second_degree_model, third_degree_model]
+energy_fn = polytensor.DensePolynomial(terms)
+
+fourth_degree_model = BVAE.load_from_checkpoint("./Models/QUBO_order_4/epoch=9999-step=200000.ckpt", energy_fn=energy_fn, energy_loss_fn=energy_loss_fn, h_dim=128)
+
+
+model_list = [second_degree_model, third_degree_model, fourth_degree_model]
+
+"""CHANGED"""
+model_list = [fourth_degree_model]
+""""""
 
 for experiment_number, model in enumerate(model_list):
+    """CHANGED"""
+    experiment_number = 3
+    """"""
     model = model.to(device)
     energy_loss = Variational_Free_Energy(
         model.energy_fn, N_samples=N_samples, batch_size=batch_size
     )
     energy_loss = energy_loss.to(device)
-    rnn = RNN_Tensorized().to(device)
+    rnn = RNN(batch_size=batch_size).to(device)
 
     optimizer = torch.optim.Adam(params=rnn.parameters(), lr=lr)
 
@@ -133,6 +146,7 @@ for experiment_number, model in enumerate(model_list):
             print(f"Epoch: {epoch}")
             print(f"Min Energy: {min_energy}")
             print(f"Loss: {loss}")
+            print(f"Num vectors: {len(unique_vector_list)}")
             if print_vector:
                 print(f"{best_vector}")
             average_energies.append(torch.mean(model.energy_fn(sigma)).item())
@@ -154,8 +168,8 @@ for experiment_number, model in enumerate(model_list):
         save_dir = "./Models/QUBO_order_2/"
     elif experiment_number == 1:
         save_dir = "./Models/QUBO_order_3/"
-    # else:
-    #     save_dir = "./Models/QUBO_order_4/"
+    else:
+        save_dir = "./Models/QUBO_order_4/"
 
     print(f"Elapsed time: {elapsed_time}")
     print(f"Time per epoch: {time_per_epoch}")

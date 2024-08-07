@@ -16,7 +16,6 @@ from Functions import (
     get_annealing_vectors,
     get_sampling_vars,
     load_FOM_model,
-    load_from_checkpoint,
     threshold,
 )
 
@@ -56,27 +55,21 @@ energy_fn = polytensor.DensePolynomial(terms)
 
 fourth_degree_model = BVAE.load_from_checkpoint("../Annealing_Learnable/Models/QUBO_order_4/epoch=9999-step=200000.ckpt", energy_fn=energy_fn, energy_loss_fn=energy_loss_fn, h_dim=128)
 
+composite_model = BVAE.load_from_checkpoint("../Annealing_Learnable/Models/Composite/epoch=9999-step=200000.ckpt", energy_fn=energy_fn, energy_loss_fn=energy_loss_fn, h_dim=128)
 
-model_list = [second_degree_model, third_degree_model, fourth_degree_model]
+model_list = [second_degree_model, third_degree_model, fourth_degree_model, composite_model]
 
 energy_loss_fn = CorrelationalLoss()
 
 FOM_calculator = load_FOM_model("../Files/VGGnet.json", "../Files/VGGnet_weights.h5")
 
-model_dir_list = ["./Models/2nd_degree/", "./Models/3rd_degree/", "./Models/4th_degree/"]
+model_dir_list = ["./Models/2nd_degree/", "./Models/3rd_degree/", "./Models/4th_degree/", "./Models/Composite/"]
 
 log_dir = ""
 
-"""
-# load QIOTE vectors
-optimal_vectors_list_qiote = None
-with open("optimal_vectors.pkl", "rb") as file:
-    optimal_vector_list_qiote = pickle.load(file)
+second, third, fourth, composite_vectors = get_annealing_vectors()
 
-"""
-
-second, third, fourth = get_annealing_vectors()
-optimal_vectors = [second, third, fourth]
+optimal_vectors = [second, third, fourth, composite_vectors]
 
 
 def mean_normalize(images: torch.Tensor):
@@ -94,9 +87,14 @@ for model_dir in model_dir_list:
         optimal_vector_list = optimal_vectors[1].cuda()
         model = model_list[1]
         degree = 4
-    else:
+    elif degree == 4:
         optimal_vector_list = optimal_vectors[2].cuda()
         model = model_list[2]
+        degree = 5
+    else:
+        optimal_vector_list = optimal_vectors[3].cuda()
+        model = model_list[3]
+        degree = 6
 
     model = model.cuda()
     new_list = []
@@ -143,10 +141,17 @@ for model_dir in tqdm(model_dir_list):
         model = model_list[1]
         """ADDED"""
         continue
-    else:
+    elif degree == 4:
         optimal_vector_list = optimal_vectors[2]
         folder_path = "./Models/4th_degree/"
         model = model_list[2]
+        degree = 5
+        continue
+    else:
+        optimal_vector_list = optimal_vectors[3]
+        folder_path = "./Models/Composite/"
+        model = model_list[3]
+        degree = 6
 
     print(optimal_vector_list.size())
     num_iters = optimal_vector_list.size()[0] // 100
