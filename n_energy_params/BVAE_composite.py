@@ -57,9 +57,6 @@ terms = polytensor.generators.coeffPUBORandomSampler(
 
 
 terms = polytensor.generators.denseFromSparse(terms, num_vars)
-terms.append(torch.randn(num_vars, num_vars))
-terms.append(torch.randn(num_vars, num_vars, num_vars))
-terms.append(torch.randn(num_vars, num_vars, num_vars, num_vars))
 
 norm = calc_norm(terms)
 print(norm)
