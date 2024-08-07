@@ -1,7 +1,9 @@
 import os
 
 import numpy as np
-import polytensor.polytensor as polytensor
+"""CHANGED"""
+# import polytensor.polytensor as polytensor
+import polytensor
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
@@ -9,7 +11,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from torch.utils.data import DataLoader
 
 from Energy_Encoder_Classes import BVAE, CorrelationalLoss, LabeledDataset, Model_Type
-from Energy_Encoder_Modules import calc_norm
+from Energy_Encoder_Modules import calc_norm, calc_norm_sparse, divide_by_norm
 
 num_MCMC_iterations = 0
 temperature = 0.1
@@ -34,12 +36,12 @@ order = 4
 num_vars = 64
 #terms to distribute: 2080
 
-num_per_degree = [
-    num_vars, #max 64
-    num_vars * (num_vars - 1) // 2, #max 2016
-    num_vars * (num_vars - 1) * (num_vars - 2) // 6, #max 41,664
-    num_vars * (num_vars - 1) * (num_vars - 2) * (num_vars - 3) // 24, #max 635,376
-]
+#num_per_degree = [
+#    num_vars, #max 64
+#    num_vars * (num_vars - 1) // 2, #max 2016
+#    num_vars * (num_vars - 1) * (num_vars - 2) // 6, #max 41,664
+#    num_vars * (num_vars - 1) * (num_vars - 2) * (num_vars - 3) // 24, #max 635,376
+#]
 
 num_per_degree = [
     64, #max 64
@@ -56,16 +58,11 @@ terms = polytensor.generators.coeffPUBORandomSampler(
 )
 
 
-norm = calc_norm(terms)
-print(norm)
-terms[0] = terms[0] / norm
-terms[1] = terms[1] / norm
-terms[2] = terms[2] / norm
-terms[3] = terms[3] / norm
-norm = calc_norm(terms)
-print(norm)
 
-energy_fn = polytensor.DensePolynomial(terms)
+norm = calc_norm_sparse(terms, "cuda")
+terms = divide_by_norm(terms, norm)
+
+energy_fn = polytensor.SparsePolynomial(terms)
 
 energy_loss_fn = CorrelationalLoss(10.0, 0.01, 0.0)
 

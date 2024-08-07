@@ -3,6 +3,19 @@ import torch.nn as nn
 import torchvision
 from torchvision.models import VGG16_Weights
 
+def divide_by_norm(terms, norm):
+    for key in terms.keys():
+        terms[key] = terms[key] / norm
+
+    return terms
+
+def calc_norm_sparse(terms, device):
+    sum_of_squares = torch.zeros(1, device=device)
+    for key in terms.keys():
+        sum_of_squares += terms[key] ** 2
+
+    return torch.sqrt(sum_of_squares)
+
 def calc_norm(terms):
     sum_of_squares = torch.zeros(1)
     for term in terms:

@@ -116,6 +116,13 @@ class BVAE(pl.LightningModule):
 
         return torch.sqrt(sum_of_squares)
 
+    def calc_norm_sparse(self, terms):
+        sum_of_squares = self.sum_of_squares_begin
+        for key in terms.keys():
+            sum_of_squares += terms[key] ** 2
+
+        return torch.sqrt(sum_of_squares)
+
 
     def MCMC_step(self, initial_vectors):
         # get random indices
@@ -240,7 +247,8 @@ class BVAE(pl.LightningModule):
         energy_loss = self.energy_loss_fn(FOM_labels, energy) * self.energy_weight
 
         # norm loss
-        norm = self.calc_norm(self.energy_fn.coefficients)
+        """CHANGED FOR SPARSE"""
+        norm = self.calc_norm_sparse(self.energy_fn.coefficients)
         norm_loss = F.mse_loss(norm, torch.ones_like(norm)) * self.norm_weight
 
         total_loss = (
