@@ -1,9 +1,7 @@
 import os
 
 import numpy as np
-"""CHANGED"""
-# import polytensor.polytensor as polytensor
-import polytensor
+import polytensor.polytensor as polytensor
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
@@ -15,7 +13,7 @@ from Energy_Encoder_Modules import calc_norm, calc_norm_sparse, divide_by_norm
 
 num_MCMC_iterations = 0
 temperature = 0.1
-resume_from_checkpoint = True
+resume_from_checkpoint = False
 num_devices = 3
 num_nodes = 4
 num_workers = 1
@@ -25,7 +23,7 @@ perceptual_weight = 0.025
 energy_weight = 1e-3
 norm_weight = 10
 h_dim = 128
-batch_size = 100
+batch_size = 20
 num_vars = 64
 model_type = Model_Type.QUBO
 order = 4
@@ -57,8 +55,6 @@ terms = polytensor.generators.coeffPUBORandomSampler(
     n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
 )
 
-
-
 norm = calc_norm_sparse(terms, "cuda")
 terms = divide_by_norm(terms, norm)
 
@@ -84,12 +80,12 @@ bvae = BVAE(
 temperature_str = str(temperature).replace(".", ",")
 model_type_str = bvae.model_type
 
-experiment_name = f"{model_type_str}_order_{order}_composite"
+experiment_name = f"{model_type_str}_order_{order}_composite_sparse"
 
 checkpoint_path = ""
 if resume_from_checkpoint:
     checkpoint_path1 = (
-        f"./logs/{model_type_str}_order_{order}_composite/"
+        f"./logs/{model_type_str}_order_{order}_composite_sparse/"
     )
     checkpoint_path2 = os.listdir(checkpoint_path1)
     newest_version = ""
