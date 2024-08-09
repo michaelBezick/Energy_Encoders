@@ -16,8 +16,8 @@ from Energy_Encoder_Modules import calc_norm, calc_norm_sparse, divide_by_norm
 num_MCMC_iterations = 0
 temperature = 0.1
 resume_from_checkpoint = True
-num_devices = 3
-num_nodes = 4
+num_devices = 1
+num_nodes = 1
 num_workers = 1
 epochs = 10000
 reconstruction_weight = 0.6
@@ -25,7 +25,7 @@ perceptual_weight = 0.025
 energy_weight = 1e-3
 norm_weight = 10
 h_dim = 128
-batch_size = 100
+batch_size = 1
 num_vars = 64
 model_type = Model_Type.QUBO
 order = 4
@@ -56,8 +56,6 @@ sample_fn = lambda: torch.randn(1, device="cuda")
 terms = polytensor.generators.coeffPUBORandomSampler(
     n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
 )
-
-
 
 norm = calc_norm_sparse(terms, "cuda")
 terms = divide_by_norm(terms, norm)
