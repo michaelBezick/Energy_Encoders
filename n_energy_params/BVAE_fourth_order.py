@@ -75,7 +75,7 @@ print(norm)
 
 energy_fn = polytensor.DensePolynomial(terms)
 
-energy_loss_fn = CorrelationalLoss(10.0, 0.01, 0.0)
+energy_loss_fn = CorrelationalLoss(correlation_weight=10.0, energy_weight=1, slope_weight=0.0)
 
 bvae = BVAE(
     energy_fn,
