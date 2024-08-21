@@ -13,7 +13,7 @@ from Energy_Encoder_Modules import calc_norm
 
 num_MCMC_iterations = 0
 temperature = 0.1
-resume_from_checkpoint = True
+resume_from_checkpoint = False
 num_devices = 3
 num_nodes = 4
 num_workers = 1
@@ -50,14 +50,11 @@ num_per_degree = [
 
 num_per_degree = [num_vars]
 
-
 sample_fn = lambda: torch.randn(1, device="cuda")
-
 
 terms = polytensor.generators.coeffPUBORandomSampler(
     n=num_vars, num_terms=num_per_degree, sample_fn=sample_fn
 )
-
 
 terms = polytensor.generators.denseFromSparse(terms, num_vars)
 terms.append(torch.randn(num_vars, num_vars))
