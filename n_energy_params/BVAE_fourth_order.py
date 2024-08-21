@@ -72,7 +72,11 @@ print(norm)
 
 energy_fn = polytensor.DensePolynomial(terms)
 
-energy_loss_fn = CorrelationalLoss(correlation_weight=10.0, energy_weight=1, slope_weight=0.0)
+correlation_weight=10.0
+energy_weight=1
+slope_weight=0.0
+
+energy_loss_fn = CorrelationalLoss(correlation_weight, energy_weight, slope_weight)
 
 bvae = BVAE(
     energy_fn,
@@ -92,12 +96,12 @@ bvae = BVAE(
 temperature_str = str(temperature).replace(".", ",")
 model_type_str = bvae.model_type
 
-experiment_name = f"{model_type_str}_order_{order}"
+experiment_name = f"{model_type_str}_order_{order}_NEW_HYPERPARAMETER"
 
 checkpoint_path = ""
 if resume_from_checkpoint:
     checkpoint_path1 = (
-        f"./logs/{model_type_str}_order_{order}/"
+        f"./logs/{model_type_str}_order_{order}_NEW_HYPERPARAMETER/"
     )
     checkpoint_path2 = os.listdir(checkpoint_path1)
     newest_version = ""
