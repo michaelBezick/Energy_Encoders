@@ -248,7 +248,8 @@ class BVAE(pl.LightningModule):
 
         # norm loss
         """CHANGED FOR SPARSE"""
-        norm = self.calc_norm_sparse(self.energy_fn.coefficients)
+        # norm = self.calc_norm_sparse(self.energy_fn.coefficients)
+        norm = self.calc_norm(self.energy_fn.coefficients)
         norm_loss = F.mse_loss(norm, torch.ones_like(norm)) * self.norm_weight
 
         total_loss = (
