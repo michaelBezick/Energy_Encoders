@@ -13,7 +13,7 @@ from Energy_Encoder_Modules import calc_norm
 
 num_MCMC_iterations = 0
 temperature = 0.1
-resume_from_checkpoint = False
+resume_from_checkpoint = True
 num_devices = 3
 num_nodes = 4
 num_workers = 1
@@ -73,7 +73,7 @@ print(norm)
 energy_fn = polytensor.DensePolynomial(terms)
 
 correlation_weight=10.0
-energy_weight=1
+energy_weight=.02
 slope_weight=0.0
 
 energy_loss_fn = CorrelationalLoss(correlation_weight, energy_weight, slope_weight)
