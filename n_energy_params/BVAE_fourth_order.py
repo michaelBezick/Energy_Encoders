@@ -73,7 +73,7 @@ print(norm)
 energy_fn = polytensor.DensePolynomial(terms)
 
 correlation_weight=10.0
-energy_weight=.02
+energy_weight=.01
 slope_weight=0.0
 
 energy_loss_fn = CorrelationalLoss(correlation_weight, energy_weight, slope_weight)
