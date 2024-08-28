@@ -6,9 +6,6 @@ import torch
 
 from annealing_classes import (
     RNN,
-    RNN_Batch_Norm,
-    RNN_Concat,
-    RNN_Tensorized,
     Variational_Free_Energy,
     Variational_Free_Energy_modified_for_specific_value,
 )
@@ -33,7 +30,13 @@ save_vectors = True
 RNN_type = "Simple_RNN"
 ##################################################
 energy_loss_fn = CorrelationalLoss(1, 1, 1)
+
 num_vars = 64
+
+total_time_list = []
+time_per_vector_list = []
+list_of_unique_vector_lists = []
+
 
 num_per_degree = [num_vars]
 sample_fn = lambda: torch.randn(1, device="cuda")
@@ -80,11 +83,12 @@ composite_model = BVAE.load_from_checkpoint(
     h_dim=128,
 )
 
-model_list = [second_degree_model, third_degree_model, fourth_degree_model, composite_model]
+model_list = [second_degree_model, third_degree_model, fourth_degree_model]
+min_energy_suggestion_list = [-5, -20, -475]
 
 for experiment_number, model in enumerate(model_list):
-    if experiment_number != 3:
-        continue
+    # if experiment_number != 3:
+    #     continue
     model = model.to(device)
     energy_loss = Variational_Free_Energy(
         model.energy_fn, N_samples=N_samples, batch_size=batch_size
@@ -167,11 +171,15 @@ for experiment_number, model in enumerate(model_list):
             index = torch.argmin(model.energy_fn(sigma))
             best_vector = sigma[index, :]
 
+        if torch.min(model.energy_fn(sigma)) < min_energy_suggestion_list[experiment_number]:
+            print(f"Suggestion: {min_energy_suggestion_list[experiment_number]}")
+            break
+
         if min_energy_repeats > min_energy_repeat_threshold:
             break
 
-        if len(unique_vector_list) > 10_000:
-            break
+        # if len(unique_vector_list) > 100:
+        #     break
 
         if epoch % log_step_size == 0:
             print(f"Epoch: {epoch}")
@@ -192,6 +200,11 @@ for experiment_number, model in enumerate(model_list):
 
     end_time = time.time()
     elapsed_time = end_time - start_time
+    time_per_vector = elapsed_time / len(unique_vector_list)
+
+    total_time_list.append(elapsed_time)
+    time_per_vector_list.append(time_per_vector)
+
     time_per_epoch = elapsed_time / (epoch + warmup_steps)
 
     save_dir = ""
@@ -206,6 +219,7 @@ for experiment_number, model in enumerate(model_list):
 
     print(f"Elapsed time: {elapsed_time}")
     print(f"Time per epoch: {time_per_epoch}")
+    list_of_unique_vector_lists.append(len(unique_vector_list))
     sigma = torch.tensor(unique_vector_list)
     print(sigma.size())
     if save_vectors:
@@ -231,3 +245,6 @@ for experiment_number, model in enumerate(model_list):
         plt.legend()
 
         plt.savefig(save_dir + RNN_type + "Average_Energy_Plot.png")
+
+for i in range(3):
+    print(f"Experiment {i}:, total time: {total_time_list[i]}, time per vector: {time_per_vector_list[i]}, num_vectors: {list_of_unique_vector_lists[i]}")
