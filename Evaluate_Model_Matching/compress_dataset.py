@@ -36,16 +36,16 @@ def load_dataset_from_binary(filename, size: list):
 if __name__ == "__main__":
     dataset_2nd = torch.load("./dataset_2nd_degree.pt")
     dataset_3rd = torch.load("./dataset_3rd_degree.pt")
-    # dataset_4th = torch.load("./dataset_4th_degree.pt")
+    dataset_4th = torch.load("./dataset_4th_degree.pt")
 
 
     dataset_2nd = dataset_2nd[:, :, 0:32, 0:32]
     dataset_3rd = dataset_3rd[:, :, 0:32, 0:32]
-    # dataset_4th = dataset_4th[:, :, 0:32, 0:32]
+    dataset_4th = dataset_4th[:, :, 0:32, 0:32]
 
     convert_to_binary(dataset_2nd, "compressed_2nd.bin")
     convert_to_binary(dataset_3rd, "compressed_3rd.bin")
-    # convert_to_binary(dataset_4th, "compressed_4th.bin")
+    convert_to_binary(dataset_4th, "compressed_4th.bin")
     #
     # # test loading
     # loaded_dataset_2nd = load_dataset_from_binary(
