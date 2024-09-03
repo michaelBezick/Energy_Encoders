@@ -1,3 +1,6 @@
+import pickle
+import time
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -24,8 +27,8 @@ from Functions import (
 )
 
 number_of_vectors_to_add_per_bin = 1000
-num_retraining_iterations = 20
-energy_function_retraining_epochs = 400
+num_retraining_iterations = 10
+energy_function_retraining_epochs = 10000
 device = "cuda"
 annealing_epochs = 200  # in the graphs 100 seems to be a safe place for convergence
 lr = 5e-4
@@ -39,7 +42,7 @@ log_step_size = 10
 min_energy_repeat_threshold = 100000
 vector_length = 64
 num_vector_samples = 60
-
+num_images_to_save = 100
 annealing_lr = 5e-4
 
 RETRAINING = True
@@ -48,6 +51,29 @@ plot = False
 save_vectors = False
 RNN_type = "Simple_RNN"
 initial_temperature = 1
+
+hyperparameters = {
+    "number_of_vectors_to_add_per_bin": number_of_vectors_to_add_per_bin,
+    "num_retraining_iterations": num_retraining_iterations,
+    "energy_function_retraining_epochs": energy_function_retraining_epochs,
+    "device": device,
+    "annealing_epochs": annealing_epochs,
+    "lr": lr,
+    "batch_size": batch_size,
+    "annealing_batch_size": annealing_batch_size,
+    "warmup_steps": warmup_steps,
+    "temperature": temperature,
+    "N_gradient_descent": N_gradient_descent,
+    "N_samples": N_samples,
+    "log_step_size": log_step_size,
+    "min_energy_repeat_threshold": min_energy_repeat_threshold,
+    "vector_length": vector_length,
+    "num_vector_samples": num_vector_samples,
+    "num_images_to_save": num_images_to_save,
+    "annealing_lr": annealing_lr,
+}
+print(hyperparameters)
+
 ##################################################
 
 
@@ -202,6 +228,18 @@ for experiment_number, model in enumerate(model_list):
 
     surrogate_model_retraining_batch_size = 500
 
+    retraining_information_dict = {}
+    retraining_information_dict["Dataset Length"] = []
+    retraining_information_dict["Average FOM"] = []
+    retraining_information_dict["Max FOM"] = []
+
+    best_images_tuple_list = []
+
+    for i in range(num_images_to_save):
+        best_images_tuple_list.append((-100, 1))
+
+    start_time = time.time()
+
     for retraining_iteration in range(num_retraining_iterations):
 
         vector_loader_1 = DataLoader(
@@ -214,7 +252,13 @@ for experiment_number, model in enumerate(model_list):
         """IDEA: RETRAIN ENERGY FUNCTION FIRST, THEN PERFORM ANNEALING."""
 
         print(f"New dataset length: {len(new_vector_dataset_labeled.vectors)}")
-        random_vector = torch.bernoulli(torch.ones(64, device="cuda") * 0.5).float()
+
+        retraining_information_dict["Dataset Length"].append(
+            len(new_vector_dataset_labeled.vectors)
+        )
+
+        print("------------------------------")
+        print(f"PERFORMING RETRAINING, ITERATION: {retraining_iteration}")
 
         model = retrain_surrogate_model(
             vector_loader_1,
@@ -258,16 +302,59 @@ for experiment_number, model in enumerate(model_list):
         """NEED TO CALCULATE ACTUAL EFFICIENCY FOR EACH VECTOR IN UNIQUE VECTOR LIST"""
 
         decoding_batch_size = 100
-        new_vectors_FOM_list = calc_efficiencies_of_new_vectors(
+        new_vectors_FOM_list, new_designs = calc_efficiencies_of_new_vectors(
             unique_vector_list, device, decoding_batch_size, model, FOM_calculator
         )
 
         print(
-            f"AVERAGE FOM OF NEW VECTORS:{sum(new_vectors_FOM_list) / len(new_vectors_FOM_list)}, Iteration: {retraining_iteration}"
+                f"AVERAGE FOM OF NEW VECTORS:{sum(new_vectors_FOM_list[-100:]) / len(new_vectors_FOM_list[-100:])}, Iteration: {retraining_iteration}"
         )
 
-        print(len(new_vectors_FOM_list))
+        print(f"MAX FOM IN THIS ITERATION: {max(new_vectors_FOM_list)}")
+
+        retraining_information_dict["Average FOM"].append(
+                sum(new_vectors_FOM_list[-100:])
+                / len(new_vectors_FOM_list[-100:])
+        )
+        retraining_information_dict["Max FOM"].append(max(new_vectors_FOM_list))
 
         new_vector_dataset_labeled = add_new_vectors_to_dataset(
             unique_vector_list, new_vectors_FOM_list, new_vector_dataset_labeled, device
         )
+
+        """NEED TO KEEP MAX VECTORS"""
+
+        for index, FOM_item in enumerate(new_vectors_FOM_list):
+            for i in range(len(best_images_tuple_list)):
+                compare = best_images_tuple_list[i][0]
+                if FOM_item > compare:
+                    best_images_tuple_list[0] = (FOM_item, new_designs[index])
+                    best_images_tuple_list = sorted(
+                        best_images_tuple_list, key=lambda x: x[0]
+                    )
+                    break
+
+    best_images = torch.zeros(num_images_to_save, 1, 64, 64)
+
+    end_time = time.time()
+
+    for i in range(num_images_to_save):
+        best_images[i, :, :, :] = best_images_tuple_list.pop()[1]
+
+    torch.save(best_images, f"highest_FOM_images_{experiment_number + 2}_degree.pt")
+
+    retraining_information_dict["Elapsed Time (minutes)"] = (end_time - start_time) / 60
+
+    retraining_information_dict["Hyperparameters"] = hyperparameters
+
+    with open(f"{experiment_number + 2}_degree_training_info.pkl", "wb") as file:
+        pickle.dump(retraining_information_dict, file)
+
+    torch.save(
+        new_vector_dataset_labeled,
+        f"{experiment_number + 2}_degree_new_vector_labeled_dataset.pt",
+    )
+
+    torch.save(
+        model.energy_fn, f"{experiment_number + 2}_newly_trained_energy_fn_weights.pt"
+    )

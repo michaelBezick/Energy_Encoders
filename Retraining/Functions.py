@@ -153,6 +153,7 @@ def calc_efficiencies_of_new_vectors(
     )
 
     new_vectors_FOM_list = []
+    new_designs = []
     for vector in vector_loader_2:
 
         decoded_images = model.vae.decode(vector)
@@ -166,8 +167,10 @@ def calc_efficiencies_of_new_vectors(
         )
 
         new_vectors_FOM_list.extend(FOMs.numpy().flatten().tolist())
+        new_designs_list = [t.squeeze(0) for t in output_expanded]
+        new_designs.extend(new_designs_list)
 
-    return new_vectors_FOM_list
+    return new_vectors_FOM_list, new_designs
 
 
 def add_new_vectors_to_dataset(
