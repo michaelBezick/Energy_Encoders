@@ -49,7 +49,7 @@ class BVAE(pl.LightningModule):
         num_MCMC_iterations=3,
         temperature=0.1,
         latent_vector_dim=64,
-        energy_fn_lr=1e-4
+        energy_fn_lr=1e-4,
     ):
         super().__init__()
 
@@ -112,7 +112,6 @@ class BVAE(pl.LightningModule):
             sum_of_squares = sum_of_squares + torch.sum(term**2)
 
         return torch.sqrt(sum_of_squares)
-
 
     def MCMC_step(self, initial_vectors):
         # get random indices
@@ -244,10 +243,17 @@ class BVAE(pl.LightningModule):
             perceptual_loss_value + reconstruction_loss + energy_loss + norm_loss
         )
 
-        self.log("reconstruction_loss", reconstruction_loss, prog_bar=True, on_step=True)
+        self.log(
+            "reconstruction_loss", reconstruction_loss, prog_bar=True, on_step=True
+        )
         self.log("perceptual_loss", perceptual_loss_value, prog_bar=True, on_step=True)
         self.log("energy_loss", energy_loss, prog_bar=True, on_step=True)
-        self.log("pearson_correlation_coefficient", self.energy_loss_fn.correlation, prog_bar=True, on_step=True)
+        self.log(
+            "pearson_correlation_coefficient",
+            self.energy_loss_fn.correlation,
+            prog_bar=True,
+            on_step=True,
+        )
         self.log("norm_loss", norm_loss, prog_bar=True, on_step=True)
         self.log("norm", norm, prog_bar=True, on_step=True)
         self.log("train_loss", total_loss)
@@ -267,13 +273,16 @@ class BVAE(pl.LightningModule):
         # scheduler_vae = optim.lr_scheduler.LambdaLR(
         #     optimizer=opt_VAE, lr_lambda=lambda epoch: self.warmup_lr_schedule(epoch)
         # )
-        opt_energy_fn = torch.optim.Adam(self.energy_fn.parameters(), lr=self.energy_fn_lr)
+        opt_energy_fn = torch.optim.Adam(
+            self.energy_fn.parameters(), lr=self.energy_fn_lr
+        )
         # scheduler_energy_fn = optim.lr_scheduler.LambdaLR(
         #     optimizer=opt_energy_fn,
         #     lr_lambda=lambda epoch: self.warmup_lr_schedule(epoch),
         # )
 
         return opt_VAE, opt_energy_fn
+
     # [
     #         {"optimizer": opt_VAE, "lr_scheduler": scheduler_vae},
     #         {
@@ -292,6 +301,7 @@ class BVAE(pl.LightningModule):
         self.energy_fn = self.energy_fn.to(self.device)
         self.scale = self.scale.to(self.device)
         self.sum_of_squares_begin = self.sum_of_squares_begin.to(self.device)
+
 
 class CorrelationalLoss:
     """
@@ -379,20 +389,25 @@ class CorrelationalLoss:
         x_deviation_from_mean = x_FOM - x_mean
         y_deviation_from_mean = y_Energy - y_mean
 
-        covariance = torch.einsum("i,i->", x_deviation_from_mean, y_deviation_from_mean) + self.epsilon
+        covariance = (
+            torch.einsum("i,i->", x_deviation_from_mean, y_deviation_from_mean)
+            + self.epsilon
+        )
 
         if covariance == 0:
             print("COVARIANCE 0")
             exit()
 
         std_dev_x = torch.sqrt(
-            torch.einsum("i,i->", x_deviation_from_mean, x_deviation_from_mean) + self.epsilon
+            torch.einsum("i,i->", x_deviation_from_mean, x_deviation_from_mean)
+            + self.epsilon
         )
         if std_dev_x == 0:
             print("std_dev_x 0")
             exit()
         std_dev_y = torch.sqrt(
-            torch.einsum("i,i->", y_deviation_from_mean, y_deviation_from_mean) + self.epsilon
+            torch.einsum("i,i->", y_deviation_from_mean, y_deviation_from_mean)
+            + self.epsilon
         )
         if std_dev_y == 0:
             print("std_dev_y 0")
@@ -405,11 +420,14 @@ class CorrelationalLoss:
 
         return pearson_correlation_coefficient
 
+
 class LabeledDatasetForVectors(Dataset):
     """
     How to append new data:
-    (class instance name).data.append((vectors, FOMs))
+    (class instance name).vectors.append(vectors)
+    (class instance name).FOMs.append(FOMs)
     """
+
     def __init__(self, transform=None):
         self.transform = transform
         self.vectors = []
@@ -427,11 +445,13 @@ class LabeledDatasetForVectors(Dataset):
 
         return vectors, FOMs
 
+
 class LabeledDataset(Dataset):
     """
     How to append new data:
     (class instance name).additional_data.append((image, label))
     """
+
     def __init__(self, images, labels, transform=None):
         self.images = images
         self.labels = labels
@@ -453,6 +473,7 @@ class LabeledDataset(Dataset):
             image = self.transform(image)
 
         return image[:, 0:32, 0:32], label
+
 
 class VAE(pl.LightningModule):
     """
