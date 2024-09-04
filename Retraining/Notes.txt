@@ -1,0 +1,8 @@
+Second Average FOM of 100 top vectors:
+1.94
+
+Third:
+1.103
+
+Fourth:
+1.028
