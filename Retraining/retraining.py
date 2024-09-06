@@ -26,24 +26,47 @@ from Functions import (
     retrain_surrogate_model,
 )
 
+energy_fn_lr_list = [1e-5, 1e-5, 1e-5]
+# norm_weight_list = [50, 50, 50]
+norm_weight_list = [10, 10, 10]
+# correlational_loss_weight_list = [1e-3, 1e-3, 1e-3]
+correlational_loss_weight_list = [1e-2, 1e-2, 1e-2]
+
+pearson_weight_list = [10, 10, 10]
+avg_energy_weight_list = [0.1, 0.1, 0.1]
+
+RNN_hidden_dim = 64
+
+energy_mismatch_threshold = -3.0
+
+how_many_vectors_to_calc_average_FOM = 100
+
 number_of_vectors_to_add_per_bin = 1000
 num_retraining_iterations = 10
-energy_function_retraining_epochs = 800
+energy_function_retraining_epochs = 400
 device = "cuda"
 annealing_epochs = 200  # in the graphs 100 seems to be a safe place for convergence
 lr = 5e-4
 batch_size = 100
-annealing_batch_size = 200
+annealing_batch_size = 300
 warmup_steps = 0
 temperature = 1
-N_gradient_descent = 5
+N_gradient_descent = 1
 N_samples = 50
 log_step_size = 10
 min_energy_repeat_threshold = 100000
 vector_length = 64
-num_vector_samples = 60
+num_vector_samples = 200
 num_images_to_save = 100
 annealing_lr = 5e-4
+
+threshold = False
+threshold_value = 0.5
+bound = True
+lower_bound = 0.0
+upper_bound = 1.0
+lowest_epochs = False
+epoch_bound = 0
 
 RETRAINING = True
 print_vector = False
@@ -178,16 +201,28 @@ original_dataset_train_loader = DataLoader(
 
 model_list = [second_degree_model, third_degree_model, fourth_degree_model]
 
-energy_fn_lr_list = [1e-5, 1e-5, 1e-5]
-norm_weight_list = [50, 50, 50]
-energy_weight_list = [1e-2, 1e-2, 1e-2]
 
 for experiment_number, model in enumerate(model_list):
 
+    if experiment_number == 0:
+        continue
+
+    """HUMUNGOUS EXPERIMENT. DONT FORGET!!!"""
+    """GONNA USE 2ND DEGREE MODEL FOR ALL PUBO DEGREES"""
     model = model.to(device)
     model.scale = model.scale.to(device)
     model.energy_fn.coefficients = model.energy_fn.coefficients.to(device)
     model.sum_of_squares_begin = model.sum_of_squares_begin.to(device)
+
+    """CHANGE IS HERE"""
+
+    # second_degree_model.energy_fn = model.energy_fn
+    # second_degree_model.energy_fn.coefficients = second_degree_model.energy_fn.coefficients.cuda()
+    # model = second_degree_model
+    # model.sum_of_squares_begin = model.sum_of_squares_begin.to(device)
+    # model.scale = model.scale.to(device)
+    # print(model.energy_fn.coefficients)
+    """""" """""" """""" """""" """""" """"""
 
     initial_vector = torch.bernoulli(torch.ones(batch_size, vector_length) * 0.5).to(
         device
@@ -222,9 +257,12 @@ for experiment_number, model in enumerate(model_list):
     surrogate_model_optimizer = torch.optim.Adam(
         params=model.energy_fn.parameters(), lr=energy_fn_lr
     )
-    correlational_loss = CorrelationalLoss(10.0, 0.01, 0.0)
+    # correlational_loss = CorrelationalLoss(10.0, 0.01, 0.0)
+    pearson_weight = pearson_weight_list[experiment_number]
+    avg_energy_weight = avg_energy_weight_list[experiment_number]
+    correlational_loss = CorrelationalLoss(pearson_weight, avg_energy_weight, 0.0)
     norm_weight = norm_weight_list[experiment_number]
-    energy_weight = energy_weight_list[experiment_number]
+    correlational_loss_weight = correlational_loss_weight_list[experiment_number]
 
     surrogate_model_retraining_batch_size = 500
 
@@ -232,6 +270,7 @@ for experiment_number, model in enumerate(model_list):
     retraining_information_dict["Dataset Length"] = []
     retraining_information_dict["Average FOM"] = []
     retraining_information_dict["Max FOM"] = []
+    retraining_information_dict["Min Energy Reached"] = []
 
     best_images_tuple_list = []
 
@@ -260,13 +299,13 @@ for experiment_number, model in enumerate(model_list):
         print("------------------------------")
         print(f"PERFORMING RETRAINING, ITERATION: {retraining_iteration}")
 
-        model = retrain_surrogate_model(
+        model, min_energy_surrogate = retrain_surrogate_model(
             vector_loader_1,
             energy_function_retraining_epochs,
             model,
             correlational_loss,
             energy_fn_lr,
-            energy_weight,
+            correlational_loss_weight,
             norm_weight,
         )
 
@@ -280,9 +319,9 @@ for experiment_number, model in enumerate(model_list):
         print("------------------------------")
         print(f"PERFORMING ANNEALING, ITERATION: {retraining_iteration}")
 
-        rnn = RNN(batch_size=annealing_batch_size).cuda()
+        rnn = RNN(batch_size=annealing_batch_size, hidden_dim=RNN_hidden_dim).cuda()
 
-        unique_vector_list = perform_annealing(
+        unique_vector_list, min_energy_reached = perform_annealing(
             annealing_batch_size,
             vector_length,
             device,
@@ -295,7 +334,13 @@ for experiment_number, model in enumerate(model_list):
             model,
             annealing_lr,
             N_gradient_descent,
+            lowest_epochs=lowest_epochs,
+            epoch_bound=epoch_bound,
+            min_energy_surrogate=min_energy_surrogate,
+            energy_mismatch_threshold=energy_mismatch_threshold,
         )
+
+        retraining_information_dict["Min Energy Reached"].append(min_energy_reached)
 
         """ANNEALING COMPLETE"""
 
@@ -306,20 +351,30 @@ for experiment_number, model in enumerate(model_list):
             unique_vector_list, device, decoding_batch_size, model, FOM_calculator
         )
 
-        print(
-                f"AVERAGE FOM OF NEW VECTORS:{sum(new_vectors_FOM_list[-100:]) / len(new_vectors_FOM_list[-100:])}, Iteration: {retraining_iteration}"
-        )
+        average_FOM_calc = -99
+        if len(new_vectors_FOM_list) != 0:
+            print(
+                f"AVERAGE FOM OF NEW VECTORS:{sum(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:]) / len(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:])}, Iteration: {retraining_iteration}"
+            )
+            average_FOM_calc = sum(
+                new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:]
+            ) / len(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:])
 
         print(f"MAX FOM IN THIS ITERATION: {max(new_vectors_FOM_list)}")
 
-        retraining_information_dict["Average FOM"].append(
-                sum(new_vectors_FOM_list[-100:])
-                / len(new_vectors_FOM_list[-100:])
-        )
+        retraining_information_dict["Average FOM"].append(average_FOM_calc)
         retraining_information_dict["Max FOM"].append(max(new_vectors_FOM_list))
 
         new_vector_dataset_labeled = add_new_vectors_to_dataset(
-            unique_vector_list, new_vectors_FOM_list, new_vector_dataset_labeled, device
+            unique_vector_list,
+            new_vectors_FOM_list,
+            new_vector_dataset_labeled,
+            device,
+            threshold=threshold,
+            threshold_value=threshold_value,
+            bound=bound,
+            lower_bound=lower_bound,
+            upper_bound=upper_bound,
         )
 
         """NEED TO KEEP MAX VECTORS"""
@@ -327,7 +382,7 @@ for experiment_number, model in enumerate(model_list):
         for index, FOM_item in enumerate(new_vectors_FOM_list):
             for i in range(len(best_images_tuple_list)):
                 compare = best_images_tuple_list[i][0]
-                if FOM_item > compare:
+                if (FOM_item > compare) & (FOM_item <= upper_bound):
                     best_images_tuple_list[0] = (FOM_item, new_designs[index])
                     best_images_tuple_list = sorted(
                         best_images_tuple_list, key=lambda x: x[0]
