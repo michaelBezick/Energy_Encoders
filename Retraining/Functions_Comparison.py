@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
+import numpy as np
 
 
 def expand_output(tensor: torch.Tensor):
@@ -56,15 +57,17 @@ def retrain_surrogate_model(
     train_loader,
     retraining_epochs,
     model,
-    correlational_loss_fn,
+    energy_loss_fn,
     lr,
-    correlational_loss_weight,
+    energy_loss_weight,
     norm_weight,
+    is_correlational_loss = True
 ):
     surrogate_model_optimizer = torch.optim.Adam(
         params=model.energy_fn.parameters(), lr=lr
     )
     norm = 0
+    corr = -99
 
     min_energy = 100
     for epoch in range(retraining_epochs):
@@ -72,36 +75,42 @@ def retrain_surrogate_model(
         for batch in train_loader:
             vectors, FOMs = batch
 
-            # print("before")
             energies = model.energy_fn(vectors)
-            #print("after")
 
             if epoch == (retraining_epochs - 1):
                 if torch.min(energies) < min_energy:
                     min_energy = torch.min(energies).item()
 
-            cl_loss = (
-                correlational_loss_fn(FOMs, energies) * correlational_loss_weight
-            )  # ORDER MATTERS FOR INFORMATION TRACKING
+            if is_correlational_loss == False:
+                energy_loss = (
+                    energy_loss_fn(FOMs,-energies) * energy_loss_weight
+                )  # ORDER MATTERS FOR INFORMATION TRACKING
+            else:
+                energy_loss = (
+                    energy_loss_fn(FOMs, energies) * energy_loss_weight
+                )  # ORDER MATTERS FOR INFORMATION TRACKING
 
-            norm = model.calc_norm(model.energy_fn.coefficients)
-            # norm = calc_norm_sparse(model.energy_fn.coefficients)
-            norm_loss = F.mse_loss(norm, torch.ones_like(norm)) * norm_weight
-            total_loss = cl_loss + norm_loss
+            if is_correlational_loss:
+                norm = model.calc_norm(model.energy_fn.coefficients)
+                norm_loss = F.mse_loss(norm, torch.ones_like(norm)) * norm_weight
+                total_loss = energy_loss + norm_loss
+            else:
+                total_loss = energy_loss
+                corr = np.corrcoef(FOMs.squeeze().cpu().detach(), energies.squeeze().cpu().detach())[0, 1]
 
-            #print("before zero grad")
             surrogate_model_optimizer.zero_grad()
-            #print("after zero grad")
-            #print("before backward")
             total_loss.backward()
-            #print("after backward")
-            #print("before step")
             surrogate_model_optimizer.step()
-            #print("after step")
 
-    print(f"Final correlation trained: {correlational_loss_fn.correlation}")
-    print(f"Final norm: {norm}")
-    print(f"MIN ENERGY: {min_energy}")
+
+    if is_correlational_loss:
+        print(f"Final correlation trained: {energy_loss_fn.correlation}")
+        print(f"Final norm: {norm}")
+        print(f"MIN ENERGY: {min_energy}")
+
+    else:
+        print(f"Final correlation trained: {corr}")
+        print(f"MIN ENERGY: {min_energy}")
     return model, min_energy
 
 

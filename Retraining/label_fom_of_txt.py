@@ -2,9 +2,9 @@ import torch
 import tensorflow as tf
 from torch.utils.data import DataLoader
 
-second = torch.load("./highest_FOM_images_2_degree.pt")
-third = torch.load("./highest_FOM_images_3_degree.pt")
-fourth = torch.load("./highest_FOM_images_4_degree.pt")
+second = torch.load("./Experiment1_Files/highest_FOM_images_2_degree.pt")
+third = torch.load("./Experiment1_Files/highest_FOM_images_3_degree.pt")
+fourth = torch.load("./Experiment1_Files/highest_FOM_images_4_degree.pt")
 
 
 def expand_output(tensor: torch.Tensor):
@@ -67,6 +67,6 @@ for i, FOMs in enumerate(FOM_list):
 
     degree = i + 2
 
-    with open(f"./{degree}_degree_FOM_list.txt", "w") as file:
+    with open(f"./Designs/{degree}_degree_FOM_list.txt", "w") as file:
         for j, FOM in enumerate(FOMs):
             file.write(f"Design {j}: {FOM:.2f}\n")

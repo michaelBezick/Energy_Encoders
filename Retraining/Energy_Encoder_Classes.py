@@ -11,6 +11,13 @@ from torch.utils.data import Dataset
 
 from Energy_Encoder_Modules import AttnBlock, ResnetBlockVAE, VGGPerceptualLoss
 
+class Energy_Matching(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, FOMs, energies):
+        return F.mse_loss(torch.squeeze(FOMs), torch.squeeze(energies))
+
 
 class Model_Type(Enum):
     QUBO = 1

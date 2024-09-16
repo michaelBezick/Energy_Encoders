@@ -4,42 +4,22 @@ import torch
 from torch.utils.data import DataLoader
 import pickle
 
+def plot_histogram(experiment_number, degrees):
 
-def plot_scatter():
-    second_dataset = torch.load(
-        "./Experiment1_Files/2_degree_new_vector_labeled_dataset.pt"
-    )
-    third_dataset = torch.load("./Experiment1_Files/3_degree_new_vector_labeled_dataset.pt")
-    fourth_dataset = torch.load(
-        "./Experiment1_Files/4_degree_new_vector_labeled_dataset.pt"
-    )
+    for degree in degrees:
+        dataset = torch.load(
+            f"./Experiment{experiment_number}_Files/{degree}_degree_new_vector_labeled_dataset.pt"
+        )
+        energy_fn = torch.load(
+            f"./Experiment{experiment_number}_Files/{degree}_newly_trained_energy_fn_weights.pt"
+        ).cuda()
 
-    second_energy_fn = torch.load(
-        "./Experiment1_Files/2_newly_trained_energy_fn_weights.pt"
-    ).cuda()
-    third_energy_fn = torch.load(
-        "./Experiment1_Files/3_newly_trained_energy_fn_weights.pt"
-    ).cuda()
-    fourth_energy_fn = torch.load(
-        "./Experiment1_Files/4_newly_trained_energy_fn_weights.pt"
-    ).cuda()
+        dataloader = DataLoader(dataset, batch_size=100, drop_last=True)
 
-    second_dataloader = DataLoader(second_dataset, batch_size=100, drop_last=True)
-    third_dataloader = DataLoader(third_dataset, batch_size=100, drop_last=True)
-    fourth_dataloader = DataLoader(fourth_dataset, batch_size=100, drop_last=True)
-
-    experiment_tuples = [
-        (second_energy_fn, second_dataloader),
-        (third_energy_fn, third_dataloader),
-        (fourth_energy_fn, fourth_dataloader),
-    ]
-
-
-    for i, (energy_fn, loader) in enumerate(experiment_tuples):
         FOMs_list = []
         energies_list = []
 
-        for batch in loader:
+        for batch in dataloader:
 
             with torch.no_grad():
 
@@ -55,27 +35,67 @@ def plot_scatter():
                 FOMs_list.extend(FOMs)
                 energies_list.extend(energies)
 
-        valid_indices = [i for i, value in enumerate(FOMs_list) if 0.0 <= value <= 1.0]
+        plt.figure()
+        plt.hist(FOMs_list)
+        plt.xlabel("FOMs")
+        plt.ylabel("Frequency")
+        plt.title("Histogram of New Dataset Generated After 10 Retraining Iterations")
+        plt.savefig(f"./Plots/Histogram_{degree}_degree.png", dpi=500)
 
-        filtered_FOMs = [FOMs_list[i] for i in valid_indices]
-        filtered_energies = [energies_list[i] for i in valid_indices]
+
+
+
+def plot_scatter(experiment_number, degrees):
+
+    for degree in degrees:
+
+        dataset = torch.load(
+            f"./Experiment{experiment_number}_Files/{degree}_degree_new_vector_labeled_dataset.pt"
+        )
+        energy_fn = torch.load(
+            f"./Experiment{experiment_number}_Files/{degree}_newly_trained_energy_fn_weights.pt"
+        ).cuda()
+
+        dataloader = DataLoader(dataset, batch_size=100, drop_last=True)
+
+        FOMs_list = []
+        energies_list = []
+
+        for batch in dataloader:
+
+            with torch.no_grad():
+
+                vectors, FOMs = batch
+                vectors = vectors.cuda()
+                FOMs = FOMs.cuda()
+
+                energies = energy_fn(vectors)
+
+                energies = torch.squeeze(energies).cpu().numpy()
+                FOMs = torch.squeeze(FOMs).cpu().numpy()
+
+                FOMs_list.extend(FOMs)
+                energies_list.extend(energies)
+
+        # valid_indices = [i for i, value in enumerate(FOMs_list) if 0.0 <= value <= 1.0]
+
+        # filtered_FOMs = [FOMs_list[i] for i in valid_indices]
+        # filtered_energies = [energies_list[i] for i in valid_indices]
 
         plt.figure()
-        plt.scatter(filtered_FOMs, filtered_energies)
+        plt.scatter(FOMs_list, energies_list)
         plt.xlabel("Efficiencies")
         plt.ylabel("Energies")
-        plt.savefig(f"./Plots/{i}_scatter.png", dpi=500)
+        plt.savefig(f"./Plots/{degree}_scatter.png", dpi=500)
 
-def plot_training_data():
-
-    degrees = [2, 3, 4]
+def plot_training_data(experiment_number, degrees):
 
     average_FOM_list = []
 
 
     for degree in degrees:
 
-        with open(f"./Experiment1_Files/{degree}_degree_training_info.pkl", "rb") as file:
+        with open(f"./Experiment{experiment_number}_Files/{degree}_degree_training_info.pkl", "rb") as file:
             experiment_info = pickle.load(file)
 
             """PLOTTING AVERAGE + MAX FOM"""
@@ -97,13 +117,39 @@ def plot_training_data():
     plt.figure()
     plt.xlabel("Retraining Iterations")
     plt.ylabel("Efficiencies")
-    plt.plot(x_axis, average_FOM_list[0], label="Average Efficiencies - Degree 2")
-    plt.plot(x_axis, average_FOM_list[1], label="Average Efficiencies - Degree 3")
-    plt.plot(x_axis, average_FOM_list[2], label="Average Efficiencies - Degree 4")
+
+    for i, degree in enumerate(degrees):
+        if degree == 2:
+            experiment_name = "Energy Matching"
+        else:
+            experiment_name = "Correlational Loss"
+
+        # plt.plot(x_axis, average_FOM_list[i], label=f"Average Efficiencies - Degree {degree}")
+        plt.plot(x_axis, average_FOM_list[i], label=f"Average Efficiencies - {experiment_name}")
+    # plt.plot(x_axis, average_FOM_list[0], label="Average Efficiencies - Degree 2")
+    # plt.plot(x_axis, average_FOM_list[1], label="Average Efficiencies - Degree 3")
+    # plt.plot(x_axis, average_FOM_list[2], label="Average Efficiencies - Degree 4")
     plt.legend()
     plt.title(f"Efficiencies over Time")
     plt.savefig(f"./Plots/Average_efficiences_over_time_All_Degrees.png", dpi=500)
 
+def save_training_info(experiment_number, degrees):
+
+    for degree in degrees:
+
+        with open(f"./Experiment{experiment_number}_Files/{degree}_degree_training_info.pkl", "rb") as file:
+            experiment_info = pickle.load(file)
+            with open(f"./Plots/training_info.txt", "w") as file:
+                hyperparameters = experiment_info["Hyperparameters"]
+                for key in hyperparameters.keys():
+                    file.write(f"{key}: {hyperparameters[key]}\n")
+
+
 
 if __name__ == "__main__":
-    plot_training_data()
+    experiment_number = 4
+    degrees = [2, 3]
+    # plot_histogram(experiment_number, degrees)
+    # plot_scatter(experiment_number, degrees)
+    plot_training_data(experiment_number, degrees)
+    # save_training_info(experiment_number, degrees)

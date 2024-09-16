@@ -1,15 +1,11 @@
 import pickle
 import time
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import polytensor
 import tensorflow as tf
 import torch
-import torch.nn.functional as F
-from torch.utils.data import DataLoader, TensorDataset
-from tqdm import tqdm
+from torch.utils.data import DataLoader
 
 from annealing_classes import RNN, Variational_Free_Energy
 from Energy_Encoder_Classes import (
@@ -37,15 +33,15 @@ avg_energy_weight_list = [0.1, 0.1, 0.1]
 
 RNN_hidden_dim = 64
 
-energy_mismatch_threshold = -3.0
+energy_mismatch_threshold = -300000.0
 
-how_many_vectors_to_calc_average_FOM = 100
+how_many_vectors_to_calc_average_FOM = 1000
 
 number_of_vectors_to_add_per_bin = 1000
 num_retraining_iterations = 10
-energy_function_retraining_epochs = 400
+energy_function_retraining_epochs = 100
 device = "cuda"
-annealing_epochs = 200  # in the graphs 100 seems to be a safe place for convergence
+annealing_epochs = 50  # in the graphs 100 seems to be a safe place for convergence
 lr = 5e-4
 batch_size = 100
 annealing_batch_size = 300
@@ -56,7 +52,7 @@ N_samples = 50
 log_step_size = 10
 min_energy_repeat_threshold = 100000
 vector_length = 64
-num_vector_samples = 200
+num_vector_samples = 100
 num_images_to_save = 100
 annealing_lr = 5e-4
 
@@ -207,22 +203,10 @@ for experiment_number, model in enumerate(model_list):
     if experiment_number == 0:
         continue
 
-    """HUMUNGOUS EXPERIMENT. DONT FORGET!!!"""
-    """GONNA USE 2ND DEGREE MODEL FOR ALL PUBO DEGREES"""
     model = model.to(device)
     model.scale = model.scale.to(device)
     model.energy_fn.coefficients = model.energy_fn.coefficients.to(device)
     model.sum_of_squares_begin = model.sum_of_squares_begin.to(device)
-
-    """CHANGE IS HERE"""
-
-    # second_degree_model.energy_fn = model.energy_fn
-    # second_degree_model.energy_fn.coefficients = second_degree_model.energy_fn.coefficients.cuda()
-    # model = second_degree_model
-    # model.sum_of_squares_begin = model.sum_of_squares_begin.to(device)
-    # model.scale = model.scale.to(device)
-    # print(model.energy_fn.coefficients)
-    """""" """""" """""" """""" """""" """"""
 
     initial_vector = torch.bernoulli(torch.ones(batch_size, vector_length) * 0.5).to(
         device
@@ -351,14 +335,16 @@ for experiment_number, model in enumerate(model_list):
             unique_vector_list, device, decoding_batch_size, model, FOM_calculator
         )
 
+        new_vectors_FOM_list_sorted = sorted(new_vectors_FOM_list)
+
         average_FOM_calc = -99
         if len(new_vectors_FOM_list) != 0:
             print(
-                f"AVERAGE FOM OF NEW VECTORS:{sum(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:]) / len(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:])}, Iteration: {retraining_iteration}"
+                f"AVERAGE FOM OF NEW VECTORS:{sum(new_vectors_FOM_list_sorted[-how_many_vectors_to_calc_average_FOM:]) / len(new_vectors_FOM_list_sorted[-how_many_vectors_to_calc_average_FOM:])}, Iteration: {retraining_iteration}"
             )
             average_FOM_calc = sum(
-                new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:]
-            ) / len(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:])
+                new_vectors_FOM_list_sorted[-how_many_vectors_to_calc_average_FOM:]
+            ) / len(new_vectors_FOM_list_sorted[-how_many_vectors_to_calc_average_FOM:])
 
         print(f"MAX FOM IN THIS ITERATION: {max(new_vectors_FOM_list)}")
 
