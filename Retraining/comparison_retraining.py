@@ -69,7 +69,7 @@ epoch_bound = 20
 RETRAINING = True
 print_vector = False
 plot = False
-save_vectors = False
+save_vectors = True
 RNN_type = "Simple_RNN"
 initial_temperature = 1
 
@@ -241,6 +241,9 @@ for total_experiment_number in range(num_overall_experiments_to_run):
             is_correlational_loss = False
             energy_loss_weight = 1
             experiment_name = "Energy_Matching"
+            continue
+
+        print(experiment_name)
 
         model = model.to(device)
         model.scale = model.scale.to(device)

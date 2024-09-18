@@ -6,6 +6,7 @@ second = torch.load("./Experiment1_Files/highest_FOM_images_2_degree.pt")
 third = torch.load("./Experiment1_Files/highest_FOM_images_3_degree.pt")
 fourth = torch.load("./Experiment1_Files/highest_FOM_images_4_degree.pt")
 
+correlational = torch.load("./Experiment4_Files/highest_FOM_images_3_degree.pt")
 
 def expand_output(tensor: torch.Tensor):
     x = torch.zeros([tensor.size()[0], 1, 64, 64])
@@ -40,15 +41,23 @@ fourth_train_loader = DataLoader(
     fourth, batch_size=100, shuffle=True, drop_last=True
 )
 
+correlational_loader = DataLoader(
+    correlational, batch_size=100, shuffle=True, drop_last=True
+)
+
+
 FOM_calculator = load_FOM_model("../Files/VGGnet.json", "../Files/VGGnet_weights.h5")
 
 FOMs = torch.zeros(0)
 
 list_of_loaders = [second_train_loader, third_train_loader, fourth_train_loader]
+list_of_loaders = [correlational_loader]
 
 FOM_list = []
 
 for loader in list_of_loaders:
+
+    FOMs_individual = []
 
     for batch in loader:
 
@@ -61,12 +70,15 @@ for loader in list_of_loaders:
         FOMs = FOMs.numpy()
 
         FOMs = torch.from_numpy(FOMs)
-        FOM_list.append(torch.squeeze(FOMs))
+        FOMs_individual.extend(torch.squeeze(FOMs).numpy())
 
-for i, FOMs in enumerate(FOM_list):
+    FOM_list.append(FOMs_individual)
+
+for i, FOMs_individual in enumerate(FOM_list):
 
     degree = i + 2
+    degree = "CORRELATIONAL"
 
     with open(f"./Designs/{degree}_degree_FOM_list.txt", "w") as file:
-        for j, FOM in enumerate(FOMs):
+        for j, FOM in enumerate(FOMs_individual):
             file.write(f"Design {j}: {FOM:.2f}\n")
