@@ -23,7 +23,7 @@ from Functions_Comparison import (
     retrain_surrogate_model,
 )
 
-num_overall_experiments_to_run = 10
+num_overall_experiments_to_run = 1 #changed
 
 energy_fn_lr_list = [1e-5, 1e-5, 1e-5]
 norm_weight_list = [10, 10, 10]
@@ -62,7 +62,7 @@ threshold = False
 threshold_value = 0.5
 bound = False
 lower_bound = 0.0
-upper_bound = 1.0
+upper_bound = 10.0
 lowest_epochs = True
 epoch_bound = 20
 
@@ -418,7 +418,8 @@ for total_experiment_number in range(num_overall_experiments_to_run):
             for index, FOM_item in enumerate(new_vectors_FOM_list):
                 for i in range(len(best_images_tuple_list)):
                     compare = best_images_tuple_list[i][0]
-                    if (FOM_item > compare) & (FOM_item <= upper_bound):
+                    if (FOM_item > compare):
+                    # if (FOM_item > compare) & (FOM_item <= upper_bound):
                         best_images_tuple_list[0] = (FOM_item, new_designs[index])
                         best_images_tuple_list = sorted(
                             best_images_tuple_list, key=lambda x: x[0]

@@ -1,12 +1,14 @@
 import torch
 import tensorflow as tf
 from torch.utils.data import DataLoader
+import keras
 
 second = torch.load("./Experiment1_Files/highest_FOM_images_2_degree.pt")
 third = torch.load("./Experiment1_Files/highest_FOM_images_3_degree.pt")
 fourth = torch.load("./Experiment1_Files/highest_FOM_images_4_degree.pt")
 
-correlational = torch.load("./Experiment4_Files/highest_FOM_images_3_degree.pt")
+# correlational = torch.load("./Experiment4_Files/highest_FOM_images_3_degree.pt")
+correlational = torch.load("./highest_FOM_images_3_degree.pt")
 
 def expand_output(tensor: torch.Tensor):
     x = torch.zeros([tensor.size()[0], 1, 64, 64])
@@ -21,7 +23,7 @@ def load_FOM_model(model_path, weights_path):
     with open(model_path, "r") as file:
         data = file.read()
 
-    FOM_calculator = tf.keras.models.model_from_json(data)
+    FOM_calculator = keras.models.model_from_json(data)
     FOM_calculator.load_weights(weights_path)
 
     return FOM_calculator
@@ -78,6 +80,12 @@ for i, FOMs_individual in enumerate(FOM_list):
 
     degree = i + 2
     degree = "CORRELATIONAL"
+
+    with open(f"./HELLO.txt", "w") as file:
+        for j, FOM in enumerate(FOMs_individual):
+            file.write(f"Design {j}: {FOM:.2f}\n")
+
+    exit()
 
     with open(f"./Designs/{degree}_degree_FOM_list.txt", "w") as file:
         for j, FOM in enumerate(FOMs_individual):
