@@ -131,15 +131,17 @@ def select_top_n(group, n=10):
 def load_FOM_model(model_path, weights_path):
     with open(model_path, "r") as file:
         data = file.read()
-
+    # loaded_model = keras.models.load_model(path)
     FOM_calculator = tf.keras.models.model_from_json(data)
+    # FOM_calculator = keras.models.model_from_json(data)
     FOM_calculator.load_weights(weights_path)
 
     return FOM_calculator
 
 
 FOM_calculator = load_FOM_model("../Files/VGGnet.json", "../Files/VGGnet_weights.h5")
-FOM_calculator.save('VGG.keras')
+# FOM_calculator = load_FOM_model("../Files/VGG.keras")
+# FOM_calculator = keras.models.load_model("../Files/VGG.keras")
 exit()
 
 
