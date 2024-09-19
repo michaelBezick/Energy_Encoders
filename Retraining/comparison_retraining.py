@@ -294,12 +294,15 @@ for total_experiment_number in range(num_overall_experiments_to_run):
         retraining_information_dict = {}
         retraining_information_dict["Dataset Length"] = []
         retraining_information_dict["Average FOM"] = []
+        retraining_information_dict["Average energy"] = []
         retraining_information_dict["Max FOM"] = []
         retraining_information_dict["Min Energy Reached"] = []
         retraining_information_dict["n last vectors for histogram"] = []
         retraining_information_dict["Min Energy Trained"] = []
         retraining_information_dict["Energy Mismatch"] = []
         retraining_information_dict["Variance of FOM"] = []
+        retraining_information_dict["Variance of energies"] = []
+        retraining_information_dict["Covariances"] = []
 
         best_images_tuple_list = []
 
@@ -379,7 +382,7 @@ for total_experiment_number in range(num_overall_experiments_to_run):
             """NEED TO CALCULATE ACTUAL EFFICIENCY FOR EACH VECTOR IN UNIQUE VECTOR LIST"""
 
             decoding_batch_size = 100
-            new_vectors_FOM_list, new_designs = calc_efficiencies_of_new_vectors(
+            new_vectors_FOM_list, new_designs, new_energies_list = calc_efficiencies_of_new_vectors(
                 unique_vector_list, device, decoding_batch_size, model, FOM_calculator
             )
 
@@ -387,12 +390,18 @@ for total_experiment_number in range(num_overall_experiments_to_run):
                 new_vectors_FOM_list = sorted(new_vectors_FOM_list)
 
             mean_of_new_FOM = -99
+            mean_of_new_energies = -99
             variance_of_new_FOM = 0
+            variance_of_energies = 0
+            covariance_of_new_FOM = 0
 
             if len(new_vectors_FOM_list) != 0:
-                
+
+                covariance_of_new_FOM = statistics.covariance(new_vectors_FOM_list, new_energies_list) 
                 mean_of_new_FOM = statistics.fmean(new_vectors_FOM_list)
+                mean_of_new_energies = statistics.fmean(new_energies_list)
                 variance_of_new_FOM = statistics.variance(new_vectors_FOM_list)
+                variance_of_energies = statistics.variance(new_energies_list)
                 print(
                     f"AVERAGE FOM OF NEW VECTORS:{mean_of_new_FOM}, Iteration: {retraining_iteration}"
                 )
@@ -400,9 +409,12 @@ for total_experiment_number in range(num_overall_experiments_to_run):
             print(f"MAX FOM IN THIS ITERATION: {max(new_vectors_FOM_list)}")
 
             retraining_information_dict["Average FOM"].append(mean_of_new_FOM)
+            retraining_information_dict["Average energy"].append(mean_of_new_energies)
             retraining_information_dict["Variance of FOM"].append(variance_of_new_FOM)
+            retraining_information_dict["Variance of energies"].append(variance_of_energies)
+            retraining_information_dict["Covariances"].append(covariance_of_new_FOM)
             retraining_information_dict["Max FOM"].append(max(new_vectors_FOM_list))
-            retraining_information_dict["n last vectors for histogram"].append(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:])
+            # retraining_information_dict["n last vectors for histogram"].append(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:])
 
             new_vector_dataset_labeled = add_new_vectors_to_dataset(
                 unique_vector_list,
