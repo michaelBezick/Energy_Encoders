@@ -223,7 +223,7 @@ def calc_efficiencies_of_new_vectors(
         )
 
         new_vectors_FOM_list.extend(FOMs.numpy().flatten().tolist())
-        new_energies_list.extend(energies.numpy().flatten().tolist())
+        new_energies_list.extend(energies.detach().cpu().numpy().flatten().tolist())
         new_designs_list = [t.squeeze(0) for t in output_expanded]
         new_designs.extend(new_designs_list)
 
