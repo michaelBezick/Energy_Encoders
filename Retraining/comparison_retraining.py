@@ -70,51 +70,51 @@ epoch_bound = 20
 RETRAINING = True
 print_vector = False
 plot = False
-save_vectors = True
+save_vectors = False
 RNN_type = "Simple_RNN"
 initial_temperature = 1
 
 hyperparameters = {
-    "energy_fn_lr_list" : [1e-5, 1e-5, 1e-5],
-    "norm_weight_list" : [10, 10, 10],
-    "correlational_loss_weight_list" : [1e-2, 1e-2, 1e-2],
-    "pearson_weight_list" : [10, 10, 10],
-    "avg_energy_weight_list" : [0.1, 0.1, 0.1],
-    "RNN_hidden_dim" : 64,
-    "energy_mismatch_threshold" : -300000.0,
-    "how_many_vectors_to_calc_average_FOM" : 100,
-    "sort_average" : False,
-    "number_of_vectors_to_add_per_bin" : 1000,
-    "num_retraining_iterations" : 10,
-    "energy_function_retraining_epochs" : 100,
-    "device" : "cuda",
-    "annealing_epochs" : 50,
-    "lr" : 5e-4,
-    "batch_size" : 100,
-    "annealing_batch_size" : 300,
-    "warmup_steps" : 0,
-    "temperature" : 1,
-    "N_gradient_descent" : 1,
-    "N_samples" : 50,
-    "log_step_size" : 10,
-    "min_energy_repeat_threshold" : 100000,
-    "vector_length" : 64,
-    "num_vector_samples" : 100,
-    "num_images_to_save" : 100,
-    "annealing_lr" : 5e-4,
-    "threshold" : False,
-    "threshold_value" : 0.5,
-    "bound" : True,
-    "lower_bound" : 0.0,
-    "upper_bound" : 1.0,
-    "lowest_epochs" : True,
-    "epoch_bound" : 20,
-    "RETRAINING" : True,
-    "print_vector" : False,
-    "plot" : False,
-    "save_vectors" : False,
-    "RNN_type" : "Simple_RNN",
-    "initial_temperature" : 1,
+    "energy_fn_lr_list" :energy_fn_lr_list,
+    "norm_weight_list" :norm_weight_list,
+    "correlational_loss_weight_list" :correlational_loss_weight_list,
+    "pearson_weight_list" :pearson_weight_list,
+    "avg_energy_weight_list" :avg_energy_weight_list,
+    "RNN_hidden_dim" :RNN_hidden_dim,
+    "energy_mismatch_threshold" :energy_mismatch_threshold,
+    "how_many_vectors_to_calc_average_FOM" :how_many_vectors_to_calc_average_FOM,
+    "sort_average" :sort_average,
+    "number_of_vectors_to_add_per_bin" :number_of_vectors_to_add_per_bin,
+    "num_retraining_iterations" :num_retraining_iterations,
+    "energy_function_retraining_epochs" :energy_function_retraining_epochs,
+    "device" :device,
+    "annealing_epochs" :annealing_epochs,
+    "lr" :lr,
+    "batch_size" :batch_size,
+    "annealing_batch_size" :annealing_batch_size,
+    "warmup_steps" :warmup_steps,
+    "temperature" :temperature,
+    "N_gradient_descent" :N_gradient_descent,
+    "N_samples" :N_samples,
+    "log_step_size" :log_step_size,
+    "min_energy_repeat_threshold" :min_energy_repeat_threshold,
+    "vector_length" :vector_length,
+    "num_vector_samples" :num_vector_samples,
+    "num_images_to_save" :num_images_to_save,
+    "annealing_lr" :annealing_lr,
+    "threshold" :threshold,
+    "threshold_value" :threshold_value,
+    "bound" :bound,
+    "lower_bound" :lower_bound,
+    "upper_bound" :upper_bound,
+    "lowest_epochs" :lowest_epochs,
+    "epoch_bound" :epoch_bound,
+    "RETRAINING" :RETRAINING,
+    "print_vector" :print_vector,
+    "plot" :plot,
+    "save_vectors" :save_vectors,
+    "RNN_type" :RNN_type,
+    "initial_temperature" :initial_temperature,
 }
 print(hyperparameters)
 
@@ -131,9 +131,7 @@ def select_top_n(group, n=10):
 def load_FOM_model(model_path, weights_path):
     with open(model_path, "r") as file:
         data = file.read()
-    # loaded_model = keras.models.load_model(path)
     FOM_calculator = tf.keras.models.model_from_json(data)
-    # FOM_calculator = keras.models.model_from_json(data)
     FOM_calculator.load_weights(weights_path)
 
     return FOM_calculator
@@ -243,7 +241,6 @@ for total_experiment_number in range(num_overall_experiments_to_run):
             is_correlational_loss = False
             energy_loss_weight = 1
             experiment_name = "Energy_Matching"
-            continue
 
         print(experiment_name)
 
@@ -440,7 +437,7 @@ for total_experiment_number in range(num_overall_experiments_to_run):
 
         retraining_information_dict["Hyperparameters"] = hyperparameters
 
-        with open(f"./Multiple_Runs_Comparison/{experiment_name}_degree_{total_experiment_number}_experiment_num_training_info.pkl", "wb") as file:
+        with open(f"./Multiple_Runs_Comparison/{experiment_name}_{total_experiment_number}_experiment_num_training_info.pkl", "wb") as file:
             pickle.dump(retraining_information_dict, file)
 
         if save_vectors:
