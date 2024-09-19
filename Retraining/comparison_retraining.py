@@ -7,6 +7,7 @@ import keras
 import tensorflow as tf
 import torch
 from torch.utils.data import DataLoader
+import statistics
 
 from annealing_classes import RNN, Variational_Free_Energy
 from Energy_Encoder_Classes import (
@@ -298,6 +299,7 @@ for total_experiment_number in range(num_overall_experiments_to_run):
         retraining_information_dict["n last vectors for histogram"] = []
         retraining_information_dict["Min Energy Trained"] = []
         retraining_information_dict["Energy Mismatch"] = []
+        retraining_information_dict["Variance of FOM"] = []
 
         best_images_tuple_list = []
 
@@ -384,19 +386,21 @@ for total_experiment_number in range(num_overall_experiments_to_run):
             if sort_average:
                 new_vectors_FOM_list = sorted(new_vectors_FOM_list)
 
-            average_FOM_calc = -99
+            mean_of_new_FOM = -99
+            variance_of_new_FOM = 0
 
             if len(new_vectors_FOM_list) != 0:
+                
+                mean_of_new_FOM = statistics.fmean(new_vectors_FOM_list)
+                variance_of_new_FOM = statistics.variance(new_vectors_FOM_list)
                 print(
-                    f"AVERAGE FOM OF NEW VECTORS:{sum(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:]) / len(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:])}, Iteration: {retraining_iteration}"
+                    f"AVERAGE FOM OF NEW VECTORS:{mean_of_new_FOM}, Iteration: {retraining_iteration}"
                 )
-                average_FOM_calc = sum(
-                    new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:]
-                ) / len(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:])
 
             print(f"MAX FOM IN THIS ITERATION: {max(new_vectors_FOM_list)}")
 
-            retraining_information_dict["Average FOM"].append(average_FOM_calc)
+            retraining_information_dict["Average FOM"].append(mean_of_new_FOM)
+            retraining_information_dict["Variance of FOM"].append(variance_of_new_FOM)
             retraining_information_dict["Max FOM"].append(max(new_vectors_FOM_list))
             retraining_information_dict["n last vectors for histogram"].append(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:])
 
