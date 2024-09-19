@@ -24,7 +24,7 @@ from Functions_Comparison import (
     retrain_surrogate_model,
 )
 
-num_overall_experiments_to_run = 1 #changed
+num_overall_experiments_to_run = 10
 
 energy_fn_lr_list = [1e-5, 1e-5, 1e-5]
 norm_weight_list = [10, 10, 10]
@@ -140,9 +140,6 @@ def load_FOM_model(model_path, weights_path):
 
 
 FOM_calculator = load_FOM_model("../Files/VGGnet.json", "../Files/VGGnet_weights.h5")
-# FOM_calculator = load_FOM_model("../Files/VGG.keras")
-# FOM_calculator = keras.models.load_model("../Files/VGG.keras")
-exit()
 
 
 def expand_output(tensor: torch.Tensor):
