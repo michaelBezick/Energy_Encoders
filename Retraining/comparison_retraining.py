@@ -3,6 +3,7 @@ import time
 
 import numpy as np
 import polytensor
+import keras
 import tensorflow as tf
 import torch
 from torch.utils.data import DataLoader
@@ -131,7 +132,7 @@ def load_FOM_model(model_path, weights_path):
     with open(model_path, "r") as file:
         data = file.read()
 
-    FOM_calculator = tf.keras.models.model_from_json(data)
+    FOM_calculator = keras.models.model_from_json(data)
     FOM_calculator.load_weights(weights_path)
 
     return FOM_calculator
