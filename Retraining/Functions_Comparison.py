@@ -36,13 +36,13 @@ def create_initial_dataset_for_vectors(
             valid_vector = model.scale_vector_copy_gradient(
                 sampled_vector, probabilities
             )
-            mask = (labels.squeeze() <= 1.0) & (labels.squeeze() >= 0.0)
-            filtered_vectors = valid_vector[mask]
-            filtered_FOM = labels[mask]
+            # mask = (labels.squeeze() <= 1.0) & (labels.squeeze() >= 0.0)
+            # filtered_vectors = valid_vector[mask]
+            # filtered_FOM = labels[mask]
             # dataset.vectors.extend(valid_vector)
             # dataset.FOMs.extend(labels)
-            dataset.vectors.extend(filtered_vectors)
-            dataset.FOMs.extend(filtered_FOM)
+            dataset.vectors.extend(valid_vector)
+            dataset.FOMs.extend(labels)
 
     return dataset
 
