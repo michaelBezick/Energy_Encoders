@@ -38,7 +38,7 @@ RNN_hidden_dim = 128
 
 energy_mismatch_threshold = -300000.0
 
-how_many_vectors_to_calc_average_FOM = 10000
+how_many_vectors_to_calc_average_FOM = 20
 sort_average = False
 
 number_of_vectors_to_add_per_bin = 1000
