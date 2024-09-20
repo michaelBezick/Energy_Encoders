@@ -464,7 +464,7 @@ for total_experiment_number in range(num_overall_experiments_to_run):
 
         retraining_information_dict["Hyperparameters"] = hyperparameters
 
-        with open(f"./Multiple_Runs_Comparison/{experiment_name}_{total_experiment_number}_experiment_num_training_info.pkl", "wb") as file:
+        with open(f"./Multiple_Runs_Comparison_nth/{experiment_name}_{total_experiment_number}_experiment_num_training_info.pkl", "wb") as file:
             pickle.dump(retraining_information_dict, file)
 
         if save_vectors:
