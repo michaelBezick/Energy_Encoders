@@ -25,7 +25,7 @@ from Functions_Comparison import (
     retrain_surrogate_model,
 )
 
-num_overall_experiments_to_run = 10
+num_overall_experiments_to_run = 2
 
 energy_fn_lr_list = [1e-5, 1e-5, 1e-5]
 norm_weight_list = [10, 10, 10]
@@ -38,7 +38,7 @@ RNN_hidden_dim = 128
 
 energy_mismatch_threshold = -300000.0
 
-how_many_vectors_to_calc_average_FOM = 100
+how_many_vectors_to_calc_average_FOM = 10000
 sort_average = False
 
 number_of_vectors_to_add_per_bin = 1000
@@ -48,11 +48,12 @@ device = "cuda"
 annealing_epochs = 100
 lr = 5e-4
 batch_size = 100
+surrogate_model_retraining_batch_size = 1000
 annealing_batch_size = 100
 warmup_steps = 0
 temperature = 1
 N_gradient_descent = 1
-N_samples = 10 # this is for VFA
+N_samples = 50 # this is for VFA
 log_step_size = 10
 min_energy_repeat_threshold = 100000
 vector_length = 64
@@ -232,6 +233,7 @@ model.energy_fn = second_degree_model.energy_fn
 """USING THIRD DEGREE MODEL WITH SECOND DEGREE ENERGY FUNCTION"""
 
 for total_experiment_number in range(num_overall_experiments_to_run):
+    total_experiment_number += 8
     for experiment_number, energy_loss_fn in enumerate(energy_loss_function_list):
 
         if experiment_number == 1:
@@ -289,7 +291,6 @@ for total_experiment_number in range(num_overall_experiments_to_run):
         # correlational_loss = CorrelationalLoss(pearson_weight, avg_energy_weight, 0.0)
         norm_weight = norm_weight_list[experiment_number]
 
-        surrogate_model_retraining_batch_size = 500
 
         retraining_information_dict = {}
         retraining_information_dict["Dataset Length"] = []
