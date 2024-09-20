@@ -39,6 +39,9 @@ RNN_hidden_dim = 128
 energy_mismatch_threshold = -300000.0
 
 how_many_vectors_to_calc_average_FOM = 20
+nth_vectors = True
+
+
 sort_average = False
 
 number_of_vectors_to_add_per_bin = 1000
@@ -387,6 +390,13 @@ for total_experiment_number in range(num_overall_experiments_to_run):
                 unique_vector_list, device, decoding_batch_size, model, FOM_calculator
             )
 
+            if nth_vectors:
+                new_vectors_FOM_list_nth = new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:].copy()
+                new_energies_list_nth = new_energies_list[-how_many_vectors_to_calc_average_FOM:].copy()
+            else:
+                new_vectors_FOM_list_nth = new_vectors_FOM_list.copy()
+                new_energies_list_nth = new_energies_list.copy()
+
             if sort_average:
                 new_vectors_FOM_list = sorted(new_vectors_FOM_list)
 
@@ -398,11 +408,11 @@ for total_experiment_number in range(num_overall_experiments_to_run):
 
             if len(new_vectors_FOM_list) != 0:
 
-                covariance_of_new_FOM = statistics.covariance(new_vectors_FOM_list, new_energies_list) 
-                mean_of_new_FOM = statistics.fmean(new_vectors_FOM_list)
-                mean_of_new_energies = statistics.fmean(new_energies_list)
-                variance_of_new_FOM = statistics.variance(new_vectors_FOM_list)
-                variance_of_energies = statistics.variance(new_energies_list)
+                covariance_of_new_FOM = statistics.covariance(new_vectors_FOM_list_nth, new_energies_list_nth) 
+                mean_of_new_FOM = statistics.fmean(new_vectors_FOM_list_nth)
+                mean_of_new_energies = statistics.fmean(new_energies_list_nth)
+                variance_of_new_FOM = statistics.variance(new_vectors_FOM_list_nth)
+                variance_of_energies = statistics.variance(new_energies_list_nth)
                 print(
                     f"AVERAGE FOM OF NEW VECTORS:{mean_of_new_FOM}, Iteration: {retraining_iteration}"
                 )
