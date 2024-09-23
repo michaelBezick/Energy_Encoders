@@ -29,10 +29,10 @@ for i in range(10):
         em_matrix[i][j] = em_run_mean[j]
 
 # print(cl_matrix)
-cl_stdevs = np.std(cl_matrix, axis=0)
+cl_stdevs = np.std(cl_matrix, axis=0) / 3
 cl_averages = np.mean(cl_matrix, axis=0)
 
-em_stdevs = np.std(em_matrix, axis=0)
+em_stdevs = np.std(em_matrix, axis=0) / 3
 em_averages = np.mean(em_matrix, axis=0)
 
 x_axis = np.linspace(1, 10, 10)
@@ -40,14 +40,24 @@ x_axis = np.linspace(1, 10, 10)
 plt.figure()
 plt.errorbar(x_axis, cl_averages, yerr=cl_stdevs, fmt='-o', capsize=5, color='purple', label='Correlational Loss')
 plt.errorbar(x_axis, em_averages, yerr=em_stdevs, fmt='-o', capsize=5, color='orange', label='Energy Matching')
-# plt.errorbar(x_axis, em_average, yerr=em_stdevs, color='orange', label='Energy Matching')
-# plt.plot(x_axis, cl_average, color='purple', label='Correlational Loss')
-# plt.plot(x_axis, em_average, color='orange', label='Energy Matching')
 plt.legend()
 plt.title("Correlational Loss versus Energy Matching on Average FOM")
 plt.xlabel("Retraining Iteration")
 plt.ylabel("Average FOM across 10 Separate Runs")
 plt.savefig("Retraining.png", dpi=500)
+
+
+plt.figure()
+plt.plot(x_axis, cl_averages, color='purple', label='Correlational Loss')
+plt.fill_between(x_axis, cl_averages - cl_stdevs, cl_averages + cl_stdevs, color='purple', alpha=0.2, label='+-1/3 Std Dev')
+plt.plot(x_axis, em_averages, color='orange', label='Energy Matching')
+plt.fill_between(x_axis, em_averages - em_stdevs, em_averages + em_stdevs, color='orange', alpha=0.2, label='+-1/3 Std Dev')
+plt.legend()
+
+plt.title("Correlational Loss versus Energy Matching on Average FOM")
+plt.xlabel("Retraining Iteration")
+plt.ylabel("Average FOM across 10 Separate Runs")
+plt.savefig("Shadow.png", dpi=500)
 
 exit()
 cl_average /= 10
