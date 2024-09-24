@@ -68,7 +68,7 @@ threshold_value = 0.5
 bound = False
 lower_bound = 0.0
 upper_bound = 10.0
-lowest_epochs = True
+lowest_epochs = False
 epoch_bound = 20
 
 RETRAINING = True
