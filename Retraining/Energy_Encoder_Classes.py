@@ -2,6 +2,7 @@ import math as m
 from enum import Enum
 
 import pytorch_lightning as pl
+#import lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,6 +11,13 @@ from torch import nn, optim
 from torch.utils.data import Dataset
 
 from Energy_Encoder_Modules import AttnBlock, ResnetBlockVAE, VGGPerceptualLoss
+
+class Energy_Matching(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, FOMs, energies):
+        return F.mse_loss(torch.squeeze(FOMs), torch.squeeze(energies))
 
 
 class Model_Type(Enum):

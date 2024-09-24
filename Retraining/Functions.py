@@ -35,11 +35,22 @@ def create_initial_dataset_for_vectors(
             valid_vector = model.scale_vector_copy_gradient(
                 sampled_vector, probabilities
             )
-            dataset.vectors.extend(valid_vector)
-            dataset.FOMs.extend(labels)
+            mask = (labels.squeeze() <= 1.0) & (labels.squeeze() >= 0.0)
+            filtered_vectors = valid_vector[mask]
+            filtered_FOM = labels[mask]
+            # dataset.vectors.extend(valid_vector)
+            # dataset.FOMs.extend(labels)
+            dataset.vectors.extend(filtered_vectors)
+            dataset.FOMs.extend(filtered_FOM)
 
     return dataset
 
+def calc_norm_sparse(terms):
+    sum_of_squares = torch.zeros(1, device="cuda")
+    for key in terms.keys():
+        sum_of_squares += terms[key] ** 2
+
+    return torch.sqrt(sum_of_squares)
 
 def retrain_surrogate_model(
     train_loader,
@@ -47,34 +58,51 @@ def retrain_surrogate_model(
     model,
     correlational_loss_fn,
     lr,
-    energy_weight,
+    correlational_loss_weight,
     norm_weight,
 ):
     surrogate_model_optimizer = torch.optim.Adam(
         params=model.energy_fn.parameters(), lr=lr
     )
     norm = 0
+
+    min_energy = 100
     for epoch in range(retraining_epochs):
+
         for batch in train_loader:
             vectors, FOMs = batch
 
+            # print("before")
             energies = model.energy_fn(vectors)
+            #print("after")
+
+            if epoch == (retraining_epochs - 1):
+                if torch.min(energies) < min_energy:
+                    min_energy = torch.min(energies).item()
 
             cl_loss = (
-                correlational_loss_fn(FOMs, energies) * energy_weight
+                correlational_loss_fn(FOMs, energies) * correlational_loss_weight
             )  # ORDER MATTERS FOR INFORMATION TRACKING
 
             norm = model.calc_norm(model.energy_fn.coefficients)
+            # norm = calc_norm_sparse(model.energy_fn.coefficients)
             norm_loss = F.mse_loss(norm, torch.ones_like(norm)) * norm_weight
             total_loss = cl_loss + norm_loss
 
+            #print("before zero grad")
             surrogate_model_optimizer.zero_grad()
+            #print("after zero grad")
+            #print("before backward")
             total_loss.backward()
+            #print("after backward")
+            #print("before step")
             surrogate_model_optimizer.step()
+            #print("after step")
 
     print(f"Final correlation trained: {correlational_loss_fn.correlation}")
     print(f"Final norm: {norm}")
-    return model
+    print(f"MIN ENERGY: {min_energy}")
+    return model, min_energy
 
 
 def perform_annealing(
@@ -90,7 +118,13 @@ def perform_annealing(
     model,
     lr,
     N_gradient_descent,
+    lowest_epochs=False,
+    epoch_bound=100,
+    min_energy_surrogate=100.0,
+    energy_mismatch_threshold=1.0,
 ):
+    """NEW IDEA: MAKE IT SHORT CIRCUIT WHEN CLOSE TO MIN ENERGY"""
+
     min_energy = 100
     unique_vector_set = set()
     unique_vector_list = []
@@ -109,16 +143,26 @@ def perform_annealing(
         loss = energy_loss(sigma_hat, temperature)
 
         # adding vectors to unique vector set
-        for i in range(num_vector_samples):
-            list_of_vectors = torch.bernoulli(sigma).tolist()
-            for vector in list_of_vectors:
-                vector_tuple = tuple(vector)
-                if vector_tuple not in unique_vector_set:
-                    unique_vector_set.add(vector_tuple)
-                    unique_vector_list.append(vector)
+
+        if (lowest_epochs == False) or (epoch > epoch_bound):
+            for i in range(num_vector_samples):
+                list_of_vectors = torch.bernoulli(sigma).tolist()
+                for vector in list_of_vectors:
+                    vector_tuple = tuple(vector)
+                    if vector_tuple not in unique_vector_set:
+                        unique_vector_set.add(vector_tuple)
+                        unique_vector_list.append(vector)
 
         if torch.min(model.energy_fn(sigma)) < min_energy:
             min_energy = torch.min(model.energy_fn(sigma))
+
+        """GET ENERGY MISMATCH"""
+        energy_mismatch_value = min_energy - min_energy_surrogate
+        if energy_mismatch_value <= energy_mismatch_threshold:
+            print(
+                f"Short circuit. Epoch: {epoch}. Energy mismatch: {energy_mismatch_value}"
+            )
+            break
 
         # if epoch % log_step_size == 0:
 
@@ -137,7 +181,7 @@ def perform_annealing(
             sigma = torch.bernoulli(sigma_hat)
 
     print(f"Min energy reached: {min_energy}")
-    return unique_vector_list
+    return unique_vector_list, min_energy
 
 
 def calc_efficiencies_of_new_vectors(
@@ -174,10 +218,42 @@ def calc_efficiencies_of_new_vectors(
 
 
 def add_new_vectors_to_dataset(
-    unique_vector_list, new_vectors_FOM_list, new_vector_dataset_labeled, device
+    unique_vector_list,
+    new_vectors_FOM_list,
+    new_vector_dataset_labeled,
+    device,
+    threshold=False,
+    threshold_value=0.9,
+    bound=False,
+    lower_bound=0.0,
+    upper_bound=1.1,
 ):
+
     new_vectors_tensor = torch.tensor(unique_vector_list, device=device)
     new_FOMs_tensor = torch.tensor(new_vectors_FOM_list, device=device)
+
+    if threshold:
+        new_combined_first = torch.cat(
+            [new_vectors_tensor, new_FOMs_tensor.unsqueeze(1)], dim=1
+        )
+        efficiency_values = new_combined_first[:, 64]
+        mask = efficiency_values >= threshold_value
+        filtered = new_combined_first[mask]
+        new_combined_first = filtered
+        new_vectors_tensor = new_combined_first[:, :64]
+        new_FOMs_tensor = new_combined_first[:, 64]
+
+    if bound:
+
+        new_combined_first = torch.cat(
+            [new_vectors_tensor, new_FOMs_tensor.unsqueeze(1)], dim=1
+        )
+        efficiency_values = new_combined_first[:, 64]
+        mask = (lower_bound <= efficiency_values) & (efficiency_values <= upper_bound)
+        filtered = new_combined_first[mask]
+        new_combined_first = filtered
+        new_vectors_tensor = new_combined_first[:, :64]
+        new_FOMs_tensor = new_combined_first[:, 64]
 
     new_vector_dataset_labeled.FOMs.extend(new_FOMs_tensor)
     new_vector_dataset_labeled.vectors.extend(new_vectors_tensor)
@@ -187,6 +263,7 @@ def add_new_vectors_to_dataset(
     temp_FOMs = temp_FOMs.unsqueeze(1)
     combined = torch.cat([temp_vectors, temp_FOMs], dim=1)
     new_combined = torch.unique(combined, dim=0)
+
     new_vectors = new_combined[:, :64]
     new_FOMs = new_combined[:, 64]
     new_vector_dataset_labeled.vectors = []

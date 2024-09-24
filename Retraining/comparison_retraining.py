@@ -25,7 +25,11 @@ from Functions_Comparison import (
     retrain_surrogate_model,
 )
 
+<<<<<<< HEAD
 num_overall_experiments_to_run = 8
+=======
+num_overall_experiments_to_run = 2
+>>>>>>> 28d74e9aadafcd86a9122a59daae71d7bfe76dbc
 
 energy_fn_lr_list = [1e-5, 1e-5, 1e-5]
 norm_weight_list = [10, 10, 10]
@@ -236,6 +240,10 @@ model.energy_fn = second_degree_model.energy_fn
 """USING THIRD DEGREE MODEL WITH SECOND DEGREE ENERGY FUNCTION"""
 
 for total_experiment_number in range(num_overall_experiments_to_run):
+<<<<<<< HEAD
+=======
+    total_experiment_number += 8
+>>>>>>> 28d74e9aadafcd86a9122a59daae71d7bfe76dbc
     for experiment_number, energy_loss_fn in enumerate(energy_loss_function_list):
 
         if experiment_number == 1:
