@@ -49,15 +49,15 @@ plt.savefig("Retraining.png", dpi=500)
 
 plt.figure()
 plt.plot(x_axis, cl_averages, color='purple', label='Correlational Loss')
-plt.fill_between(x_axis, cl_averages - cl_stdevs, cl_averages + cl_stdevs, color='purple', alpha=0.2, label='+-1/3 Std Dev')
+plt.fill_between(x_axis, cl_averages - cl_stdevs, cl_averages + cl_stdevs, color='purple', alpha=0.2, label=r'$\pm \sigma / 3$')
 plt.plot(x_axis, em_averages, color='orange', label='Energy Matching')
-plt.fill_between(x_axis, em_averages - em_stdevs, em_averages + em_stdevs, color='orange', alpha=0.2, label='+-1/3 Std Dev')
+plt.fill_between(x_axis, em_averages - em_stdevs, em_averages + em_stdevs, color='orange', alpha=0.2, label=r'$\pm \sigma / 3$')
 plt.legend()
 
-plt.title("Correlational Loss versus Energy Matching on Average FOM")
+plt.title("Average Sampled FOM (N=10)")
 plt.xlabel("Retraining Iteration")
-plt.ylabel("Average FOM across 10 Separate Runs")
-plt.savefig("Shadow.png", dpi=500)
+plt.ylabel(r"FOM $f(x)$")
+plt.savefig("Shadow.pdf")
 
 exit()
 cl_average /= 10

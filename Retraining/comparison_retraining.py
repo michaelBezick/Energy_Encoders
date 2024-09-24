@@ -25,11 +25,7 @@ from Functions_Comparison import (
     retrain_surrogate_model,
 )
 
-<<<<<<< HEAD
-num_overall_experiments_to_run = 8
-=======
-num_overall_experiments_to_run = 2
->>>>>>> 28d74e9aadafcd86a9122a59daae71d7bfe76dbc
+num_overall_experiments_to_run = 10
 
 energy_fn_lr_list = [1e-5, 1e-5, 1e-5]
 norm_weight_list = [10, 10, 10]
@@ -43,8 +39,7 @@ RNN_hidden_dim = 128
 energy_mismatch_threshold = -300000.0
 
 how_many_vectors_to_calc_average_FOM = 20
-nth_vectors = True
-
+nth_vectors = False
 
 sort_average = False
 
@@ -240,10 +235,6 @@ model.energy_fn = second_degree_model.energy_fn
 """USING THIRD DEGREE MODEL WITH SECOND DEGREE ENERGY FUNCTION"""
 
 for total_experiment_number in range(num_overall_experiments_to_run):
-<<<<<<< HEAD
-=======
-    total_experiment_number += 8
->>>>>>> 28d74e9aadafcd86a9122a59daae71d7bfe76dbc
     for experiment_number, energy_loss_fn in enumerate(energy_loss_function_list):
 
         if experiment_number == 1:
@@ -308,7 +299,7 @@ for total_experiment_number in range(num_overall_experiments_to_run):
         retraining_information_dict["Average energy"] = []
         retraining_information_dict["Max FOM"] = []
         retraining_information_dict["Min Energy Reached"] = []
-        retraining_information_dict["n last vectors for histogram"] = []
+        retraining_information_dict["n last FOM for histogram"] = []
         retraining_information_dict["Min Energy Trained"] = []
         retraining_information_dict["Energy Mismatch"] = []
         retraining_information_dict["Variance of FOM"] = []
@@ -397,6 +388,8 @@ for total_experiment_number in range(num_overall_experiments_to_run):
                 unique_vector_list, device, decoding_batch_size, model, FOM_calculator
             )
 
+            retraining_information_dict["n last FOM for histogram"].append(new_vectors_FOM_list.copy())
+
             if nth_vectors:
                 new_vectors_FOM_list_nth = new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:].copy()
                 new_energies_list_nth = new_energies_list[-how_many_vectors_to_calc_average_FOM:].copy()
@@ -432,7 +425,6 @@ for total_experiment_number in range(num_overall_experiments_to_run):
             retraining_information_dict["Variance of energies"].append(variance_of_energies)
             retraining_information_dict["Covariances"].append(covariance_of_new_FOM)
             retraining_information_dict["Max FOM"].append(max(new_vectors_FOM_list))
-            # retraining_information_dict["n last vectors for histogram"].append(new_vectors_FOM_list[-how_many_vectors_to_calc_average_FOM:])
 
             new_vector_dataset_labeled = add_new_vectors_to_dataset(
                 unique_vector_list,
@@ -471,7 +463,7 @@ for total_experiment_number in range(num_overall_experiments_to_run):
 
         retraining_information_dict["Hyperparameters"] = hyperparameters
 
-        with open(f"./Multiple_Runs_Comparison_nth/{experiment_name}_{total_experiment_number}_experiment_num_training_info.pkl", "wb") as file:
+        with open(f"./Multiple_Runs_Comparison_hist/{experiment_name}_{total_experiment_number}_experiment_num_training_info.pkl", "wb") as file:
             pickle.dump(retraining_information_dict, file)
 
         if save_vectors:
