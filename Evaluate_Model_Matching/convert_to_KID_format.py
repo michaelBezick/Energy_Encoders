@@ -16,11 +16,14 @@ loaded_dataset_2nd = load_dataset_from_binary(
 loaded_dataset_3rd = load_dataset_from_binary(
     "./compressed_3rd.bin", [20_000, 1, 32, 32]
 )
+loaded_dataset_4th = load_dataset_from_binary(
+    "./compressed_4th.bin", [20_000, 1, 32, 32]
+)
 
 loaded_dataset_2nd = to_rgb(loaded_dataset_2nd).numpy().astype(np.float16)
 loaded_dataset_3rd = to_rgb(loaded_dataset_3rd).numpy().astype(np.float16)
-# loaded_dataset_4th = to_rgb(loaded_dataset_4th).numpy().astype(np.float16)
+loaded_dataset_4th = to_rgb(loaded_dataset_4th).numpy().astype(np.float16)
 
 np.save("dataset_2nd.npy", loaded_dataset_2nd)
 np.save("dataset_3rd.npy", loaded_dataset_3rd)
-# np.save("dataset_4th.npy", loaded_dataset_4th)
+np.save("dataset_4th.npy", loaded_dataset_4th)

@@ -5,11 +5,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import polytensor
-import tensorflow as tf
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
+import tensorflow as tf
+
+import polytensor.polytensor as polytensor
 
 from annealing_classes import RNN, Variational_Free_Energy
 from Energy_Encoder_Classes import (
@@ -28,7 +30,7 @@ from Functions import (
 
 number_of_vectors_to_add_per_bin = 1000
 num_retraining_iterations = 10
-energy_function_retraining_epochs = 10000
+energy_function_retraining_epochs = 1000
 device = "cuda"
 annealing_epochs = 200  # in the graphs 100 seems to be a safe place for convergence
 lr = 5e-4
