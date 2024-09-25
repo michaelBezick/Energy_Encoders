@@ -2,27 +2,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 
+a = 10
+
 correlational_data = []
-for i in range(10):
+for i in range(a):
     with open(f"./Correlational_Loss_{i}_experiment_num_training_info.pkl", "rb") as file:
         correlational_data.append(pickle.load(file))
 
 energy_matching_data = []
-for i in range(10):
+for i in range(a):
     with open(f"./Energy_Matching_{i}_experiment_num_training_info.pkl", "rb") as file:
         energy_matching_data.append(pickle.load(file))
 
 total_corr_FOM = []
-for i in range(10):
+for i in range(a):
     corr_n_last = correlational_data[i]["n last FOM for histogram"]
-    corr_flat = [item for sublist in corr_n_last for item in sublist]
-    total_corr_FOM.extend(corr_flat)
+    total_corr_FOM.extend(corr_n_last[-1])
 
 total_matching_FOM = []
-for i in range(10):
+for i in range(a):
     matching_n_last = energy_matching_data[i]["n last FOM for histogram"]
-    matching_flat = [item for sublist in matching_n_last for item in sublist]
-    total_matching_FOM.extend(matching_flat)
+    total_matching_FOM.extend(matching_n_last[-1])
 
 # corr_n_last = correlational_dict["n last FOM for histogram"]
 # corr_flat = [item for sublist in corr_n_last for item in sublist]
@@ -39,6 +39,7 @@ plt.ylabel("Frequency")
 plt.title("Correlational Loss versus Energy Matching on FOM")
 plt.legend()
 plt.savefig("Histogram.pdf")
+exit()
 
 
 # cl_average = np.zeros(10)
