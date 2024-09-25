@@ -467,12 +467,12 @@ for total_experiment_number in range(num_overall_experiments_to_run):
             pickle.dump(retraining_information_dict, file)
 
         if save_vectors:
-            torch.save(best_images, f"highest_FOM_images_{experiment_number + 2}_degree.pt")
-            torch.save(
-                new_vector_dataset_labeled,
-                f"{experiment_number + 2}_degree_new_vector_labeled_dataset.pt",
-            )
+            torch.save(best_images, f"highest_FOM_images_{experiment_name}.pt")
+            #torch.save(
+            #    new_vector_dataset_labeled,
+            #    f"{experiment_number + 2}_degree_new_vector_labeled_dataset.pt",
+            #)
 
-            torch.save(
-                model.energy_fn, f"{experiment_number + 2}_newly_trained_energy_fn_weights.pt"
-            )
+            #torch.save(
+            #    model.energy_fn, f"{experiment_number + 2}_newly_trained_energy_fn_weights.pt"
+            #)
