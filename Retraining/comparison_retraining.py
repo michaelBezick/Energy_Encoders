@@ -25,7 +25,7 @@ from Functions_Comparison import (
     retrain_surrogate_model,
 )
 
-num_overall_experiments_to_run = 10
+num_overall_experiments_to_run = 1
 
 energy_fn_lr_list = [1e-5, 1e-5, 1e-5]
 norm_weight_list = [10, 10, 10]
@@ -74,7 +74,7 @@ epoch_bound = 20
 RETRAINING = True
 print_vector = False
 plot = False
-save_vectors = False
+save_vectors = True
 RNN_type = "Simple_RNN"
 initial_temperature = 1
 
