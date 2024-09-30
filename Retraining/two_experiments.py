@@ -25,7 +25,7 @@ from Functions_Comparison import (
     retrain_surrogate_model,
 )
 
-num_overall_experiments_to_run = 1
+num_overall_experiments_to_run = 10
 
 energy_fn_lr_list = [1e-5, 1e-5, 1e-5]
 norm_weight_list = [10, 10, 10]
@@ -264,7 +264,7 @@ for (model, model_name) in model_list:
                 is_correlational_loss = True
                 energy_loss_weight = 1e-2
                 experiment_name = "Correlational_Loss_Loss_fn"
-                continue
+
             else:
                 is_correlational_loss = False
                 energy_loss_weight = 1
