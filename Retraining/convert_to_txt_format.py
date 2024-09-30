@@ -3,11 +3,12 @@ import tensorflow as tf
 import torch
 from torch.utils.data import DataLoader
 
-second = torch.load("./Experiment1_Files/highest_FOM_images_2_degree.pt").to(torch.uint8).flatten(start_dim=2, end_dim=3).squeeze()
-third = torch.load("./Experiment1_Files/highest_FOM_images_3_degree.pt").to(torch.uint8).flatten(start_dim=2, end_dim=3).squeeze()
-fourth = torch.load("./Experiment1_Files/highest_FOM_images_4_degree.pt").to(torch.uint8).flatten(start_dim=2, end_dim=3).squeeze()
-
-correlational = torch.load("./highest_FOM_images_3_degree.pt").to(torch.uint8).flatten(start_dim=2, end_dim=3).squeeze()
+# second = torch.load("./Experiment1_Files/highest_FOM_images_2_degree.pt").to(torch.uint8).flatten(start_dim=2, end_dim=3).squeeze()
+# third = torch.load("./Experiment1_Files/highest_FOM_images_3_degree.pt").to(torch.uint8).flatten(start_dim=2, end_dim=3).squeeze()
+# fourth = torch.load("./Experiment1_Files/highest_FOM_images_4_degree.pt").to(torch.uint8).flatten(start_dim=2, end_dim=3).squeeze()
+#
+# correlational = torch.load("./highest_FOM_images_3_degree.pt").to(torch.uint8).flatten(start_dim=2, end_dim=3).squeeze()
+matching = torch.load("./highest_FOM_images_Energy_Matching.pt").to(torch.uint8).flatten(start_dim=2, end_dim=3).squeeze()
 
 def expand_output(tensor: torch.Tensor):
     x = torch.zeros([tensor.size()[0], 1, 64, 64])
@@ -72,7 +73,7 @@ def convert(dataset, filename, num_images):
                 elif pixel.item() == 1:
                     file.write("1\n")
 
-convert(correlational, "Correlational_3rd", 100)
+convert(matching, "Matching_3rd", 100)
 # convert(second, "Designs/Second", 100)
 # convert(third, "Designs/Third", 100)
 # convert(fourth, "Designs/Fourth", 100)

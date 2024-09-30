@@ -3,12 +3,13 @@ import tensorflow as tf
 from torch.utils.data import DataLoader
 import keras
 
-second = torch.load("./Experiment1_Files/highest_FOM_images_2_degree.pt")
-third = torch.load("./Experiment1_Files/highest_FOM_images_3_degree.pt")
-fourth = torch.load("./Experiment1_Files/highest_FOM_images_4_degree.pt")
-
-# correlational = torch.load("./Experiment4_Files/highest_FOM_images_3_degree.pt")
-correlational = torch.load("./highest_FOM_images_3_degree.pt")
+# second = torch.load("./Experiment1_Files/highest_FOM_images_2_degree.pt")
+# third = torch.load("./Experiment1_Files/highest_FOM_images_3_degree.pt")
+# fourth = torch.load("./Experiment1_Files/highest_FOM_images_4_degree.pt")
+#
+# # correlational = torch.load("./Experiment4_Files/highest_FOM_images_3_degree.pt")
+# correlational = torch.load("./highest_FOM_images_3_degree.pt")
+matching = torch.load("./highest_FOM_images_Energy_Matching.pt")
 
 def expand_output(tensor: torch.Tensor):
     x = torch.zeros([tensor.size()[0], 1, 64, 64])
@@ -31,20 +32,24 @@ def load_FOM_model(model_path, weights_path):
 def clamp_output(tensor: torch.Tensor, threshold):
     return torch.where(tensor > threshold, torch.tensor(1.0), torch.tensor(0.0))
 
-second_train_loader = DataLoader(
-    second, batch_size=100, shuffle=True, drop_last=True
-)
+# second_train_loader = DataLoader(
+#     second, batch_size=100, shuffle=True, drop_last=True
+# )
+#
+# third_train_loader = DataLoader(
+#     third, batch_size=100, shuffle=True, drop_last=True
+# )
+#
+# fourth_train_loader = DataLoader(
+#     fourth, batch_size=100, shuffle=True, drop_last=True
+# )
+#
+# correlational_loader = DataLoader(
+#     correlational, batch_size=100, shuffle=True, drop_last=True
+# )
 
-third_train_loader = DataLoader(
-    third, batch_size=100, shuffle=True, drop_last=True
-)
-
-fourth_train_loader = DataLoader(
-    fourth, batch_size=100, shuffle=True, drop_last=True
-)
-
-correlational_loader = DataLoader(
-    correlational, batch_size=100, shuffle=True, drop_last=True
+matching_loader = DataLoader(
+    matching, batch_size=100, shuffle=True, drop_last=True
 )
 
 
@@ -52,8 +57,9 @@ FOM_calculator = load_FOM_model("../Files/VGGnet.json", "../Files/VGGnet_weights
 
 FOMs = torch.zeros(0)
 
-list_of_loaders = [second_train_loader, third_train_loader, fourth_train_loader]
-list_of_loaders = [correlational_loader]
+# list_of_loaders = [second_train_loader, third_train_loader, fourth_train_loader]
+# list_of_loaders = [correlational_loader]
+list_of_loaders = [matching_loader]
 
 FOM_list = []
 

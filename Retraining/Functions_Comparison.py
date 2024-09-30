@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def expand_output(tensor: torch.Tensor):
@@ -66,16 +67,27 @@ def retrain_surrogate_model(
     surrogate_model_optimizer = torch.optim.Adam(
         params=model.energy_fn.parameters(), lr=lr
     )
+    if is_correlational_loss == False:
+        energy_loss_optim = torch.optim.Adam(energy_loss_fn.parameters(), lr=1e-3)
     norm = 0
     corr = -99
 
     min_energy = 100
+
     for epoch in range(retraining_epochs):
+
+        # if epoch == retraining_epochs - 1:
+        #     FOMs_list = []
+        #     energies_list = []
 
         for batch in train_loader:
             vectors, FOMs = batch
 
             energies = model.energy_fn(vectors)
+
+            # if epoch == retraining_epochs - 1:
+            #     FOMs_list.extend(FOMs.detach().cpu().numpy())
+            #     energies_list.extend(energies.detach().cpu().numpy())
 
             if epoch == (retraining_epochs - 1):
                 if torch.min(energies) < min_energy:
@@ -83,7 +95,7 @@ def retrain_surrogate_model(
 
             if is_correlational_loss == False:
                 energy_loss = (
-                    energy_loss_fn(FOMs,-energies) * energy_loss_weight
+                    energy_loss_fn(FOMs, energies) * energy_loss_weight
                 )  # ORDER MATTERS FOR INFORMATION TRACKING
             else:
                 energy_loss = (
@@ -98,9 +110,23 @@ def retrain_surrogate_model(
                 total_loss = energy_loss
                 corr = np.corrcoef(FOMs.squeeze().cpu().detach(), energies.squeeze().cpu().detach())[0, 1]
 
+            if is_correlational_loss == False:
+                energy_loss_optim.zero_grad()
+
             surrogate_model_optimizer.zero_grad()
             total_loss.backward()
             surrogate_model_optimizer.step()
+
+            if is_correlational_loss == False:
+                energy_loss_optim.step()
+
+    # plt.figure()
+    # plt.scatter(FOMs_list, energies_list)
+    # plt.xlabel("FOMs")
+    # plt.ylabel("energies")
+    # plt.savefig("FOMs versus energies with new energy matching")
+    # plt.close()
+    #
 
 
     if is_correlational_loss:
@@ -111,6 +137,8 @@ def retrain_surrogate_model(
     else:
         print(f"Final correlation trained: {corr}")
         print(f"MIN ENERGY: {min_energy}")
+        print(f"alpha: {energy_loss_fn.alpha}, beta: {energy_loss_fn.beta}")
+
     return model, min_energy
 
 
