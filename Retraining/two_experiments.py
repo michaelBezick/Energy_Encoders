@@ -25,7 +25,7 @@ from Functions_Comparison import (
     retrain_surrogate_model,
 )
 
-num_overall_experiments_to_run = 10
+num_overall_experiments_to_run = 1
 
 energy_fn_lr_list = [1e-5, 1e-5, 1e-5]
 norm_weight_list = [10, 10, 10]
@@ -250,6 +250,7 @@ correlational_model.energy_fn = second_degree_model.energy_fn
 energy_matching_model.energy_fn = temp_second.energy_fn
 
 model_list = [(correlational_model, "Correlational_Loss_Model"), (energy_matching_model, "Energy_Matching_Model")]
+model_list = [(energy_matching_model, "Energy_Matching_Model"), (correlational_model, "Correlational_Loss_Model")]
 
 """USING THIRD DEGREE MODEL WITH SECOND DEGREE ENERGY FUNCTION"""
 
@@ -260,6 +261,8 @@ for (model, model_name) in model_list:
     for total_experiment_number in range(num_overall_experiments_to_run):
         for experiment_number, energy_loss_fn in enumerate(energy_loss_function_list):
 
+            total_experiment_number = 9
+
             if experiment_number == 1:
                 is_correlational_loss = True
                 energy_loss_weight = 1e-2
@@ -269,6 +272,7 @@ for (model, model_name) in model_list:
                 is_correlational_loss = False
                 energy_loss_weight = 1
                 experiment_name = "Energy_Matching_Loss_fn"
+                continue
 
             print(experiment_name)
 
