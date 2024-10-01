@@ -261,7 +261,7 @@ for (model, model_name) in model_list:
     for total_experiment_number in range(num_overall_experiments_to_run):
         for experiment_number, energy_loss_fn in enumerate(energy_loss_function_list):
 
-            total_experiment_number = 9
+            total_experiment_number = -1 
 
             if experiment_number == 1:
                 is_correlational_loss = True
@@ -495,12 +495,12 @@ for (model, model_name) in model_list:
                 pickle.dump(retraining_information_dict, file)
 
             if save_vectors:
-                torch.save(best_images, f"highest_FOM_images_{experiment_name}.pt")
-                #torch.save(
-                #    new_vector_dataset_labeled,
-                #    f"{experiment_number + 2}_degree_new_vector_labeled_dataset.pt",
-                #)
+                # torch.save(best_images, f"highest_FOM_images_{experiment_name}.pt")
+                torch.save(
+                   new_vector_dataset_labeled,
+                   f"{experiment_name}_{total_experiment_number}_degree_new_vector_labeled_dataset.pt",
+                )
 
-                #torch.save(
-                #    model.energy_fn, f"{experiment_number + 2}_newly_trained_energy_fn_weights.pt"
-                #)
+                torch.save(
+                   model.energy_fn, f"{experiment_name}_{total_experiment_number}_newly_trained_energy_fn_weights.pt"
+                )

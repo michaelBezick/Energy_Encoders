@@ -6,109 +6,215 @@ plt.rcParams.update({'font.size':14})
 
 a = 10
 
-correlational_data = []
+correlational_data_corr_model = []
+correlational_data_matching_model = []
 for i in range(a):
-    with open(f"./Correlational_Loss_{i}_experiment_num_training_info.pkl", "rb") as file:
-        correlational_data.append(pickle.load(file))
+    with open(f"./Correlational_Loss_Model_Correlational_Loss_Loss_fn_{i}_experiment_num_training_info.pkl", "rb") as file:
+        correlational_data_corr_model.append(pickle.load(file))
 
-energy_matching_data = []
-for i in range(a):
-    with open(f"./Energy_Matching_{i}_experiment_num_training_info.pkl", "rb") as file:
-        energy_matching_data.append(pickle.load(file))
+    with open(f"./Energy_Matching_Model_Correlational_Loss_Loss_fn_{i}_experiment_num_training_info.pkl", "rb") as file:
+        correlational_data_matching_model.append(pickle.load(file))
 
-total_corr_FOM = []
-corr_FOM_last = []
+energy_matching_data_corr_model = []
+energy_matching_data_matching_model = []
 for i in range(a):
-    corr_n_last = correlational_data[i]["n last FOM for histogram"]
+    with open(f"./Correlational_Loss_Model_Energy_Matching_Loss_fn_{i}_experiment_num_training_info.pkl", "rb") as file:
+        energy_matching_data_corr_model.append(pickle.load(file))
+    with open(f"./Energy_Matching_Model_Energy_Matching_Loss_fn_{i}_experiment_num_training_info.pkl", "rb") as file:
+        energy_matching_data_matching_model.append(pickle.load(file))
+
+corr_FOM_total_corr_model = []
+corr_FOM_last_corr_model = []
+corr_FOM_total_matching_model = []
+corr_FOM_last_matching_model = []
+for i in range(a):
+    corr_n_last = correlational_data_corr_model[i]["n last FOM for histogram"]
     corr_flat = [item for sublist in corr_n_last for item in sublist]
-    total_corr_FOM.extend(corr_flat)
 
-    corr_FOM_last.extend(corr_n_last[-1])
+    corr_FOM_total_corr_model.extend(corr_flat)
+    corr_FOM_last_corr_model.extend(corr_n_last[-1])
 
-total_matching_FOM = []
-matching_FOM_last = []
+    corr_n_last = correlational_data_matching_model[i]["n last FOM for histogram"]
+    corr_flat = [item for sublist in corr_n_last for item in sublist]
+
+    corr_FOM_total_matching_model.extend(corr_flat)
+    corr_FOM_last_matching_model.extend(corr_n_last[-1])
+
+matching_FOM_total_corr_model = []
+matching_FOM_last_corr_model = []
+matching_FOM_total_matching_model = []
+matching_FOM_last_matching_model = []
 for i in range(a):
-    matching_n_last = energy_matching_data[i]["n last FOM for histogram"]
+    matching_n_last = energy_matching_data_corr_model[i]["n last FOM for histogram"]
     matching_flat = [item for sublist in matching_n_last for item in sublist]
-    total_matching_FOM.extend(matching_flat)
 
-    matching_FOM_last.extend(matching_n_last[-1])
+    matching_FOM_total_corr_model.extend(matching_flat)
+    matching_FOM_last_corr_model.extend(matching_n_last[-1])
+
+    matching_n_last = energy_matching_data_matching_model[i]["n last FOM for histogram"]
+    matching_flat = [item for sublist in matching_n_last for item in sublist]
+
+    matching_FOM_total_matching_model.extend(matching_flat)
+    matching_FOM_last_matching_model.extend(matching_n_last[-1])
 
 
-print(f"Correlational average: {sum(total_corr_FOM) / len(total_corr_FOM)}")
-print(f"Matching average: {sum(total_matching_FOM) / len(total_matching_FOM)}")
+fig, ax = plt.subplots()
 
-print("------------------------------")
+# First pair (exp1 vs exp2)
+ax.boxplot([matching_FOM_last_matching_model, corr_FOM_last_matching_model], positions=[1, 2], widths=0.6, patch_artist=True, showfliers=False)
 
-print(f"Correlational average last: {sum(corr_FOM_last) / len(corr_FOM_last)}")
-print(f"Matching average last: {sum(matching_FOM_last) / len(matching_FOM_last)}")
+# Second pair (exp3 vs exp4), offset by some distance
+ax.boxplot([matching_FOM_last_corr_model, corr_FOM_last_corr_model], positions=[4, 5], widths=0.6, patch_artist=True, showfliers=False)
+
+# Customize plot
+ax.set_xticks([1.5, 4.5])
+# plt.xticks(fontsize=10)
+ax.set_xticklabels(['EM vs. CL\n EM-bAE', 'EM vs. CL\nCL-bAE'])
+ax.set_ylabel('FOMs')
+ax.set_title('EM vs. CL on EM-bAE and CL-bAE\n(N=10)')
+plt.savefig("all_boxplot.pdf")
 
 plt.figure()
-plt.hist(total_matching_FOM, bins=1000, alpha=0.5, color="orange", label="Energy Matching", density=True)
-plt.hist(total_corr_FOM, bins=1000, alpha=0.5, color="purple", label="Correlational Loss", density=True)
-plt.xlim(0, 1.5)
 
-plt.xlabel("FOM")
-plt.ylabel("Normalized Frequency")
-plt.title("Correlational Loss versus Energy Matching\n(N = 10)")
-plt.legend()
-plt.savefig("Histogram.pdf")
+fig, axs = plt.subplots(1, 2, figsize=(10, 5))
 
-plt.figure()
-plt.hist(matching_FOM_last, bins=1000, alpha=0.5, color="orange", label="Energy Matching", density=True)
-plt.hist(corr_FOM_last, bins=1000, alpha=0.5, color="purple", label="Correlational Loss", density=True)
-plt.xlim(0, 1.5)
+bins = np.linspace(0, 2.0, 100)
 
-plt.xlabel("FOM")
-plt.ylabel("Normalized Frequency")
-plt.title("Correlational Loss versus Energy Matching\n(N = 10)")
-plt.legend()
-plt.savefig("Last_Histogram.pdf")
+axs[0].hist(matching_FOM_last_matching_model, bins=bins, alpha=0.5, label='EM', color='orange', density=True)
+axs[0].hist(corr_FOM_last_matching_model, bins=bins, alpha=0.5, label='CL', color='purple', density=True)
+axs[0].set_title('EM vs. CL with EM-bAE\n(N=10)')
+axs[0].set_xlabel('FOM')
+axs[0].set_ylabel('Frequency')
+axs[0].legend()
+axs[0].set_xlim([0, 2.0])
 
-# cl_average = np.zeros(10)
-# em_average = np.zeros(10)
-cl_matrix = np.zeros((10, 10))
-em_matrix = np.zeros((10, 10))
+# Second histogram (two sets of data: data2_a and data2_b)
+axs[1].hist(matching_FOM_last_corr_model, bins=bins, alpha=0.5, label='EM', color='orange', density=True)
+axs[1].hist(corr_FOM_last_corr_model, bins=bins, alpha=0.5, label='CL', color='purple', density=True)
+axs[1].set_title('EM vs. CL with CL-bAE\n(N=10)')
+axs[1].set_xlabel('FOM')
+axs[1].set_ylabel('Frequency')
+axs[1].legend()
+axs[1].set_xlim([0, 2.0])
+plt.tight_layout()
+plt.subplots_adjust(wspace=0.4)
 
-for i in range(10):
-    cl_run_mean = np.array(correlational_data[i]["Average FOM"])
-    # cl_average += cl_run_mean
-    #
-    em_run_mean = np.array(energy_matching_data[i]["Average FOM"])
-    # em_average += em_run_mean
+plt.savefig("all histograms.pdf")
+
+em_model_cl_matrix = np.zeros((a, 10))
+em_model_em_matrix = np.zeros((a, 10))
+
+cl_model_cl_matrix = np.zeros((a, 10))
+cl_model_em_matrix = np.zeros((a, 10))
+
+for i in range(a):
+    cl_run_mean = np.array(correlational_data_matching_model[i]["Average FOM"])
+    em_run_mean = np.array(energy_matching_data_matching_model[i]["Average FOM"])
 
     for j in range(10):
-        cl_matrix[i][j] = cl_run_mean[j]
-        em_matrix[i][j] = em_run_mean[j]
+        em_model_cl_matrix[i][j] = cl_run_mean[j]
+        em_model_em_matrix[i][j] = em_run_mean[j]
+
+    cl_run_mean = np.array(correlational_data_corr_model[i]["Average FOM"])
+    em_run_mean = np.array(energy_matching_data_corr_model[i]["Average FOM"])
+
+    for j in range(10):
+        cl_model_cl_matrix[i][j] = cl_run_mean[j]
+        cl_model_em_matrix[i][j] = em_run_mean[j]
 
 # print(cl_matrix)
-cl_stdevs = np.std(cl_matrix, axis=0) / 3
-cl_averages = np.mean(cl_matrix, axis=0)
+em_model_cl_stdevs = np.std(em_model_cl_matrix, axis=0) / 3
+em_model_cl_averages = np.mean(em_model_cl_matrix, axis=0)
+em_model_em_stdevs = np.std(em_model_em_matrix, axis=0) / 3
+em_model_em_averages = np.mean(em_model_em_matrix, axis=0)
 
-em_stdevs = np.std(em_matrix, axis=0) / 3
-em_averages = np.mean(em_matrix, axis=0)
+cl_model_cl_stdevs = np.std(cl_model_cl_matrix, axis=0) / 3
+cl_model_cl_averages = np.mean(cl_model_cl_matrix, axis=0)
+cl_model_em_stdevs = np.std(cl_model_em_matrix, axis=0) / 3
+cl_model_em_averages = np.mean(cl_model_em_matrix, axis=0)
 
 x_axis = np.linspace(1, 10, 10)
+fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+
+axs[0].plot(x_axis, em_model_cl_averages, color='purple', label='Correlational Loss')
+axs[0].fill_between(x_axis, em_model_cl_averages - em_model_cl_stdevs, em_model_cl_averages + em_model_cl_stdevs, color='purple', alpha=0.2, label=r'$\pm \sigma / 3$')
+axs[0].plot(x_axis, em_model_em_averages, color='orange', label='Energy Matching')
+axs[0].fill_between(x_axis, em_model_em_averages - em_model_em_stdevs, em_model_em_averages + em_model_em_stdevs, color='orange', alpha=0.2, label=r'$\pm \sigma / 3$')
+axs[0].legend(fontsize="small")
+axs[0].set_xlabel("Retraining Iteration")
+axs[0].set_ylabel("Average FOM (N=10)")
+axs[0].set_title("CL vs. EM on Average FOM, EM-bAE\n(N=10)")
+
+axs[1].plot(x_axis, cl_model_cl_averages, color='purple', label='Correlational Loss')
+axs[1].fill_between(x_axis, cl_model_cl_averages - cl_model_cl_stdevs, cl_model_cl_averages + cl_model_cl_stdevs, color='purple', alpha=0.2, label=r'$\pm \sigma / 3$')
+axs[1].plot(x_axis, cl_model_em_averages, color='orange', label='Energy Matching')
+axs[1].fill_between(x_axis, cl_model_em_averages - cl_model_em_stdevs, cl_model_em_averages + cl_model_em_stdevs, color='orange', alpha=0.2, label=r'$\pm \sigma / 3$')
+axs[1].legend(fontsize="small")
+axs[1].set_xlabel("Retraining Iteration")
+axs[1].set_ylabel("Average FOM (N=10)")
+axs[1].set_title("CL vs. EM on Average FOM, CL-bAE\n(N=10)")
+plt.tight_layout()
+plt.subplots_adjust(wspace=0.4)
+
+plt.savefig("all_line_plots.pdf")
+
+fig, ax = plt.subplots()
+
+# First pair (exp1 vs exp2)
+ax.boxplot([matching_FOM_last_matching_model, corr_FOM_last_matching_model], positions=[1, 2], widths=0.6, patch_artist=True, showfliers=False)
+
+# Second pair (exp3 vs exp4), offset by some distance
+ax.boxplot([matching_FOM_last_corr_model, corr_FOM_last_corr_model], positions=[4, 5], widths=0.6, patch_artist=True, showfliers=False)
+
+# Customize plot
+ax.set_xticks([1.5, 4.5])
+# plt.xticks(fontsize=10)
+ax.set_xticklabels(['EM vs. CL\n EM-bAE', 'EM vs. CL\nCL-bAE'])
+ax.set_ylabel('FOMs')
+ax.set_title('EM vs. CL on EM-bAE and CL-bAE\n(N=10)')
+plt.savefig("all_boxplot.pdf")
+
+""""""
 
 plt.figure()
-plt.errorbar(x_axis, cl_averages, yerr=cl_stdevs, fmt='-o', capsize=5, color='purple', label='Correlational Loss')
-plt.errorbar(x_axis, em_averages, yerr=em_stdevs, fmt='-o', capsize=5, color='orange', label='Energy Matching')
-plt.legend()
-plt.title("Correlational Loss versus Energy Matching on Average FOM")
-plt.xlabel("Retraining Iteration")
-plt.ylabel("Average FOM across 10 Separate Runs")
-plt.savefig("Retraining.pdf", dpi=500)
 
+fig, axs = plt.subplots(1, 2, figsize=(10, 5))
 
-plt.figure()
-plt.plot(x_axis, cl_averages, color='purple', label='Correlational Loss')
-plt.fill_between(x_axis, cl_averages - cl_stdevs, cl_averages + cl_stdevs, color='purple', alpha=0.2, label=r'$\pm \sigma / 3$')
-plt.plot(x_axis, em_averages, color='orange', label='Energy Matching')
-plt.fill_between(x_axis, em_averages - em_stdevs, em_averages + em_stdevs, color='orange', alpha=0.2, label=r'$\pm \sigma / 3$')
-plt.legend()
+bins = np.linspace(0, 2.0, 100)
 
-plt.title("Average Sampled FOM\n(N=10)")
-plt.xlabel("Retraining Iteration")
-plt.ylabel(r"FOM $f(x)$")
-plt.savefig("Shadow.pdf")
+axs[0].hist(matching_FOM_total_matching_model, bins=bins, alpha=0.5, label='EM', color='orange', density=True)
+axs[0].hist(corr_FOM_total_matching_model, bins=bins, alpha=0.5, label='CL', color='purple', density=True)
+axs[0].set_title('EM vs. CL with EM-bAE\n(N=10)')
+axs[0].set_xlabel('FOM')
+axs[0].set_ylabel('Frequency')
+axs[0].legend()
+axs[0].set_xlim([0, 2.0])
 
+# Second histogram (two sets of data: data2_a and data2_b)
+axs[1].hist(matching_FOM_total_corr_model, bins=bins, alpha=0.5, label='EM', color='orange', density=True)
+axs[1].hist(corr_FOM_total_corr_model, bins=bins, alpha=0.5, label='CL', color='purple', density=True)
+axs[1].set_title('EM vs. CL with CL-bAE\n(N=10)')
+axs[1].set_xlabel('FOM')
+axs[1].set_ylabel('Frequency')
+axs[1].legend()
+axs[1].set_xlim([0, 2.0])
+plt.tight_layout()
+plt.subplots_adjust(wspace=0.4)
+
+plt.savefig("all histograms total.pdf")
+
+fig, ax = plt.subplots()
+
+# First pair (exp1 vs exp2)
+ax.boxplot([matching_FOM_total_matching_model, corr_FOM_total_matching_model], positions=[1, 2], widths=0.6, patch_artist=True, showfliers=False)
+
+# Second pair (exp3 vs exp4), offset by some distance
+ax.boxplot([matching_FOM_total_corr_model, corr_FOM_total_corr_model], positions=[4, 5], widths=0.6, patch_artist=True, showfliers=False)
+
+# Customize plot
+ax.set_xticks([1.5, 4.5])
+# plt.xticks(fontsize=10)
+ax.set_xticklabels(['EM vs. CL\n EM-bAE', 'EM vs. CL\nCL-bAE'])
+ax.set_ylabel('FOMs')
+ax.set_title('EM vs. CL on EM-bAE and CL-bAE\n(N=10)')
+plt.savefig("all_boxplot_total.pdf")
