@@ -88,15 +88,20 @@ with torch.no_grad():
         sampled_energies = torch.squeeze(sampled_energies)
         loss = cl(sampled_energies, labels)
         energies.extend(sampled_energies.detach().cpu().numpy())
+        break
 
 
 loss = cl(torch.Tensor(FOMs), torch.Tensor(energies))
 second_degree_pearson = cl.correlation
+
+torch.save(energies, "second_cl_energies.pt")
+torch.save(FOMs, "second_cl_FOMs.pt")
+exit()
 plt.scatter(FOMs, energies)
 plt.title("Second Degree Energies versus FOMs")
 plt.xlabel("FOMs")
 plt.ylabel("Energies")
-plt.savefig("Scatter_Second_Degree_Learnable.png", dpi=300)
+plt.savefig("Scatter_Second_Degree_Learnable.pdf", dpi=300)
 
 third_degree_model = third_degree_model.cuda()
 third_degree_model.scale = third_degree_model.scale.cuda()
@@ -132,7 +137,7 @@ plt.scatter(FOMs, energies)
 plt.title("Third Degree Energies versus FOMs")
 plt.xlabel("FOMs")
 plt.ylabel("Energies")
-plt.savefig("Scatter_Third_Degree_Learnable.png", dpi=300)
+plt.savefig("Scatter_Third_Degree_Learnable.pdf", dpi=300)
 
 
 fourth_degree_model = fourth_degree_model.cuda()
@@ -168,7 +173,7 @@ plt.scatter(FOMs, energies)
 plt.title("Fourth Degree Energies versus FOMs")
 plt.xlabel("FOMs")
 plt.ylabel("Energies")
-plt.savefig("Scatter_Fourth_Degree_Learnable.png", dpi=300)
+plt.savefig("Scatter_Fourth_Degree_Learnable.pdf", dpi=300)
 
 with open("plot_notes.txt", "w") as file:
     file.write(f"Second_degree_pearson: {second_degree_pearson}\nThird_degree_pearson: {third_degree_pearson}\nFourth_degree_pearson: {fourth_degree_pearson}")

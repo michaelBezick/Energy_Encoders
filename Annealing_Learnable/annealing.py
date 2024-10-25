@@ -244,7 +244,7 @@ for experiment_number, model in enumerate(model_list):
 
         plt.legend()
 
-        plt.savefig(save_dir + RNN_type + "Average_Energy_Plot.png")
+        plt.savefig(save_dir + RNN_type + "Average_Energy_Plot.pdf")
 
 for i in range(3):
     print(f"Experiment {i}:, total time: {total_time_list[i]}, time per vector: {time_per_vector_list[i]}, num_vectors: {list_of_unique_vector_lists[i]}")

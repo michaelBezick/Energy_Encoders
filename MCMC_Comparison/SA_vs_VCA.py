@@ -12,7 +12,6 @@ from annealing_classes import (
     Tensorized_RNN_Sampler,
     RNN_Tensorized,
     Variational_Free_Energy,
-    Variational_Free_Energy_New,
 )
 from Energy_Encoder_Classes import BVAE, CorrelationalLoss
 
@@ -152,8 +151,7 @@ for experiment_number, model in enumerate(model_list):
     # energy_loss = Variational_Free_Energy(
     #     model.energy_fn, N_samples=N_samples, batch_size=batch_size
     # )
-    """CHANGED TO NEW"""
-    energy_loss = Variational_Free_Energy_New(model.energy_fn, N_samples=N_samples, batch_size=batch_size)
+    energy_loss = Variational_Free_Energy(model.energy_fn, N_samples=N_samples, batch_size=batch_size)
 
     """RNN_Tensorized"""
 
@@ -472,8 +470,8 @@ for experiment_number, model in enumerate(model_list):
         
         plt.xlabel("Transition Steps")
         plt.ylabel("Average Energy")
-        plt.title("Average Energy of Solutions versus Transition Steps - " + model_type)
+        plt.title("Average Energy of Solutions versus Transition Steps")
 
         plt.legend()
 
-        plt.savefig(save_dir + model_type + "_Average_Energy_Plot_TEST.png")
+        plt.savefig(save_dir + model_type + "_Average_Energy_Plot_TEST.pdf")

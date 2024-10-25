@@ -88,15 +88,21 @@ with torch.no_grad():
         sampled_energies = torch.squeeze(sampled_energies)
         loss = cl(sampled_energies, labels)
         energies.extend(sampled_energies.detach().cpu().numpy())
+        break
 
 loss = cl(torch.Tensor(FOMs), torch.Tensor(energies))
 second_degree_pearson = cl.correlation
+torch.save(FOMs, "EM_FOMs.pt")
+torch.save(energies, "EM_energies.pt")
+
+
 plt.figure()
 plt.scatter(FOMs, energies)
 plt.title("Second Degree Energies versus FOMs")
 plt.xlabel("FOMs")
 plt.ylabel("Energies")
-plt.savefig("Scatter_Second_Degree_Matching.png", dpi=300)
+plt.savefig("Scatter_Second_Degree_Matching.pdf")
+exit()
 
 third_degree_model = third_degree_model.to("cuda")
 
